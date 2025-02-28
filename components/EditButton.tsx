@@ -3,6 +3,8 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { getSupabaseBrowser } from '@supabase/auth-helpers-nextjs'
+import { deletePages } from '@/lib/page-utils'
 
 interface EditButtonProps {
   onClick: () => void
@@ -53,7 +55,7 @@ export default function EditButton({ onClick, isEditing, onSave, pageId, pageSlu
     }
   }, [showSuccess])
   
-  // Handle save button click
+  // Handle save button click - SIMPLIFIED
   const handleSave = useCallback(async () => {
     if (!onSave) return
     
@@ -85,31 +87,21 @@ export default function EditButton({ onClick, isEditing, onSave, pageId, pageSlu
     setIsDeleting(true)
     
     try {
-      const response = await fetch('/api/delete-page', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          id: pageId,
-          slug: pageSlug 
-        })
-      });
+      const result = await deletePages([pageId], [pageSlug])
       
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to delete page');
+      if (!result.success) {
+        throw new Error(result.error)
       }
       
-      router.push('/');
+      // Navigate away from deleted page
+      router.push('/')
     } catch (error) {
-      console.error('Delete error:', error);
-      alert(`Failed to delete page: ${error.message}`);
+      console.error('Delete error:', error)
+      alert(`Failed to delete page: ${error.message}`)
     } finally {
-      setIsDeleting(false);
+      setIsDeleting(false)
     }
-  }, [pageId, pageSlug, router]);
+  }, [pageId, pageSlug, router])
   
   if (!session?.user?.isAdmin) return null
   

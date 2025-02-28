@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import getSupabaseBrowser from '@/lib/supabase-browser';
 import * as d3 from 'd3';
@@ -10,6 +10,9 @@ interface PageGraphViewProps {
   currentContent?: string;    // Page content to extract links from
   currentTitle?: string;      // Current page title for display
   updateTrigger?: number;     // Optional trigger that causes graph to update
+  isAdmin?: boolean;          // Add this prop
+  selectedNodes?: string[];    // Add this prop
+  setSelectedNodes?: (nodes: string[]) => void; // Add this prop
 }
 
 interface GraphNode extends d3.SimulationNodeDatum {
@@ -18,11 +21,13 @@ interface GraphNode extends d3.SimulationNodeDatum {
   slug: string;
   isCurrent: boolean;
   relationship: 'current' | 'outgoing' | 'incoming';
+  x?: number;
+  y?: number;
 }
 
 interface GraphLink {
-  source: string;
-  target: string;
+  source: GraphNode | string;
+  target: GraphNode | string;
   direction: 'in' | 'out';
 }
 
@@ -30,7 +35,10 @@ export default function PageGraphView({
   currentSlug, 
   currentContent, 
   currentTitle,
-  updateTrigger = 0 
+  updateTrigger = 0,
+  isAdmin = false,
+  selectedNodes = [],
+  setSelectedNodes = () => {} 
 }: PageGraphViewProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [graphData, setGraphData] = useState<{nodes: GraphNode[], links: GraphLink[]}>({ nodes: [], links: [] });
@@ -39,6 +47,8 @@ export default function PageGraphView({
   
   // Create a ref to store the interval ID
   const intervalRef = useRef(null);
+
+  const [isPending, startTransition] = useTransition();
 
   // Clean up interval when component unmounts
   useEffect(() => {
@@ -66,113 +76,108 @@ export default function PageGraphView({
     async function loadGraphData() {
       setLoading(true);
       
-      let pageTitle = currentTitle;
-      if (!pageTitle) {
-        try {
-          // Get current page title if not provided
-          const { data } = await getSupabaseBrowser()
-            .from('pages')
-            .select('title')
-            .eq('slug', currentSlug)
-            .single();
-          
-          pageTitle = data?.title || currentSlug;
-        } catch (error) {
-          console.error('Error fetching current page title:', error);
-          pageTitle = currentSlug;
-        }
-      }
-      
-      // Extract outgoing links
-      const outgoingLinks = extractPageLinks(currentContent);
-      
-      // Get pages that link to current page (incoming links)
       try {
+        // Get all pages in one query for better performance
         const { data: allPages } = await getSupabaseBrowser()
           .from('pages')
           .select('id, slug, title, content');
           
-        if (!allPages || allPages.length === 0) {
+        // First find the current page
+        const currentPage = allPages.find(p => p.slug === currentSlug);
+        
+        if (!currentPage) {
+          console.error('Current page not found in database');
           setGraphData({ nodes: [], links: [] });
           setLoading(false);
           return;
         }
         
-        const nodes: GraphNode[] = [];
-        const links: GraphLink[] = [];
+        // Create a map of slug to page for quick lookups
+        const pageMap = new Map();
+        allPages.forEach(page => {
+          pageMap.set(page.slug, page);
+        });
+        
+        const nodes = [];
+        const links = [];
         
         // Add current page node
-        const currentPageData = allPages.find(p => p.slug === currentSlug);
-        if (currentPageData) {
-          nodes.push({
-            id: currentPageData.id,
-            title: pageTitle,
-            slug: currentSlug,
-            isCurrent: true,
-            relationship: 'current'
-          });
+        nodes.push({
+          id: currentPage.id,
+          title: currentPage.title || currentSlug,
+          slug: currentSlug,
+          isCurrent: true,
+          relationship: 'current'
+        });
+        
+        // Find outgoing links in current page content
+        const outgoingLinks = extractPageLinks(currentPage.content);
+        
+        // Add nodes and links for pages the current page links to
+        outgoingLinks.forEach(targetSlug => {
+          const targetPage = pageMap.get(targetSlug);
           
-          // Add outgoing connections
-          outgoingLinks.forEach(targetSlug => {
-            const targetPage = allPages.find(p => p.slug === targetSlug);
-            if (targetPage) {
-              // Add target node if not already included
-              if (!nodes.some(node => node.id === targetPage.id)) {
+          if (targetPage) {
+            // Add target node if not already in nodes
+            if (!nodes.some(node => node.id === targetPage.id)) {
+              nodes.push({
+                id: targetPage.id,
+                title: targetPage.title,
+                slug: targetPage.slug,
+                isCurrent: false,
+                relationship: 'outgoing'
+              });
+            }
+            
+            // Add link
+            links.push({
+              source: currentPage.id,
+              target: targetPage.id,
+              direction: 'out'
+            });
+          }
+        });
+        
+        // Find incoming links - pages that link to the current page
+        allPages.forEach(page => {
+          if (page.id !== currentPage.id) {
+            const pageLinks = extractPageLinks(page.content);
+            
+            if (pageLinks.includes(currentSlug)) {
+              // Add source node if not already in nodes
+              if (!nodes.some(node => node.id === page.id)) {
                 nodes.push({
-                  id: targetPage.id,
-                  title: targetPage.title,
-                  slug: targetPage.slug,
+                  id: page.id,
+                  title: page.title,
+                  slug: page.slug,
                   isCurrent: false,
-                  relationship: 'outgoing'
+                  relationship: 'incoming'
                 });
               }
               
               // Add link
               links.push({
-                source: currentPageData.id,
-                target: targetPage.id,
-                direction: 'out'
+                source: page.id,
+                target: currentPage.id,
+                direction: 'in'
               });
             }
-          });
-          
-          // Find and add incoming connections
-          allPages.forEach(page => {
-            if (page.slug !== currentSlug) {
-              const pageLinks = extractPageLinks(page.content);
-              if (pageLinks.includes(currentSlug)) {
-                // Add source node if not already included
-                if (!nodes.some(node => node.id === page.id)) {
-                  nodes.push({
-                    id: page.id,
-                    title: page.title,
-                    slug: page.slug,
-                    isCurrent: false,
-                    relationship: 'incoming'
-                  });
-                }
-                
-                // Add link
-                links.push({
-                  source: page.id,
-                  target: currentPageData.id,
-                  direction: 'in'
-                });
-              }
-            }
-          });
-        }
+          }
+        });
         
-        setGraphData({ nodes, links });
+        // Use transition for smoother UI updates
+        startTransition(() => {
+          setGraphData({ nodes, links });
+          setLoading(false);
+        });
       } catch (error) {
         console.error('Error loading graph data:', error);
-      } finally {
         setLoading(false);
       }
     }
     
     loadGraphData();
-  }, [currentSlug, currentContent, updateTrigger]); // Update on content changes too
+  }, [currentSlug, currentContent, currentTitle, updateTrigger]);
   
   // Render the graph visualization
   useEffect(() => {
@@ -220,17 +225,51 @@ export default function PageGraphView({
       .enter().append("g")
       .attr("cursor", "pointer")
       .on("click", (event, d) => {
-        router.push(`/${d.slug}`);
+        if (isAdmin) {
+          event.stopPropagation();
+          
+          // Check if the node is already selected
+          const isCurrentlySelected = selectedNodes.includes(d.id);
+          
+          // Update visual appearance immediately
+          d3.select(event.currentTarget)
+            .select('circle')
+            .attr('fill', isCurrentlySelected ? 
+              (d.isCurrent ? "#7C3AED" : "#A78BFA") : 
+              "#EF4444")
+            .attr('stroke', isCurrentlySelected ? 'none' : '#B91C1C')
+            .attr('stroke-width', isCurrentlySelected ? 0 : 3);
+          
+          // Update React state
+          setSelectedNodes(prev => {
+            if (isCurrentlySelected) {
+              return prev.filter(id => id !== d.id);
+            } else {
+              return [...prev, d.id];
+            }
+          });
+        } else {
+          // Navigate to page when non-admin clicks
+          router.push(`/${d.slug}`);
+        }
       })
-      .call(d3.drag()
+      .call(d3.drag<SVGGElement, GraphNode>()
         .on("start", dragstarted)
         .on("drag", dragged)
-        .on("end", dragended));
+        .on("end", dragended) as any);
     
     // Add circles for nodes
     node.append("circle")
       .attr("r", d => d.isCurrent ? 20 : 15)
-      .attr("fill", d => d.isCurrent ? "#7C3AED" : "#A78BFA") // Purple colors
+      .attr("fill", d => {
+        // Apply correct color based on selection state
+        if (selectedNodes.includes(d.id)) {
+          return "#EF4444"; // Selected color (red)
+        }
+        return d.isCurrent ? "#7C3AED" : "#A78BFA"; // Default colors
+      })
+      .attr("stroke", d => selectedNodes.includes(d.id) ? '#B91C1C' : 'none')
+      .attr("stroke-width", d => selectedNodes.includes(d.id) ? 3 : 0)
       .style("cursor", "pointer");
       
     // Add labels
@@ -245,10 +284,14 @@ export default function PageGraphView({
     simulation.on("tick", () => {
       // Update link paths with straight lines and proper arrow positioning
       link.attr("d", d => {
-        const sourceX = d.source.x;
-        const sourceY = d.source.y;
-        const targetX = d.target.x;
-        const targetY = d.target.y;
+        // Get source and target nodes (handle both string and object references)
+        const source = typeof d.source === 'string' ? graphData.nodes.find(n => n.id === d.source) : d.source;
+        const target = typeof d.target === 'string' ? graphData.nodes.find(n => n.id === d.target) : d.target;
+        
+        const sourceX = source.x || 0;
+        const sourceY = source.y || 0;
+        const targetX = target.x || 0;
+        const targetY = target.y || 0;
         
         // Calculate distance and direction
         const dx = targetX - sourceX;
@@ -256,7 +299,7 @@ export default function PageGraphView({
         const dr = Math.sqrt(dx * dx + dy * dy);
         
         // Adjust end point to stop at circle edge
-        const nodeRadius = d.target.isCurrent ? 20 : 15;
+        const nodeRadius = source.isCurrent ? 20 : 15;
         const scale = (dr - nodeRadius) / dr;
         const endX = sourceX + (dx * scale);
         const endY = sourceY + (dy * scale);
@@ -304,23 +347,23 @@ export default function PageGraphView({
         simulation.alpha(0.1).restart();
       }, 2000);
     });
-  }, [graphData, loading, router]);
+  }, [graphData, loading, router, isAdmin, selectedNodes, setSelectedNodes]);
   
   return (
-    <div className="mb-8 overflow-hidden rounded-lg bg-purple-100">
+    <div className="mb-8 overflow-hidden rounded-lg bg-purple-100" style={{ height: '220px' }}>
       {loading ? (
-        <div className="flex justify-center items-center h-40 bg-purple-100">
+        <div className="flex justify-center items-center h-full">
           <p className="text-purple-700">Loading connections...</p>
         </div>
       ) : graphData.nodes.length <= 1 ? (
-        <div className="flex justify-center items-center h-40 bg-purple-100">
+        <div className="flex justify-center items-center h-full">
           <p className="text-purple-700">No connected pages yet</p>
         </div>
       ) : (
         <svg 
           ref={svgRef} 
-          className="w-full h-52"
-          style={{ minHeight: '220px', background: '#F3E8FF' }}
+          className="w-full h-full"
+          style={{ background: '#F3E8FF' }}
         />
       )}
     </div>

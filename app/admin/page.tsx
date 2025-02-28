@@ -6,6 +6,7 @@ import getSupabaseBrowser from '@/lib/supabase-browser'
 import Layout from '@/components/Layout'
 import * as d3 from 'd3'
 import { useRouter } from 'next/navigation'
+import { deletePages } from '@/lib/page-utils'
 
 export default function AdminPage() {
   const { data: session, status } = useSession()
