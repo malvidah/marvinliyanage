@@ -1,97 +1,92 @@
 "use client"
 
-import { useEditor, EditorContent } from "@tiptap/react"
-import StarterKit from "@tiptap/starter-kit"
-import Image from "@tiptap/extension-image"
-import Link from "@tiptap/extension-link"
-import YouTube from "@tiptap/extension-youtube"
-import { useCallback, useEffect, useState } from "react"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
-import { useRouter } from "next/navigation"
-
-const CustomDocument = StarterKit.configure({
-  document: {
-    content: "heading block*",
-  },
-})
-
-const Tiptap = ({ initialContent, onSave }) => {
-  const editor = useEditor({
-    extensions: [
-      CustomDocument,
-      Image,
-      Link.configure({
-        openOnClick: false,
-      }),
-      YouTube.configure({
-        controls: false,
-      }),
-    ],
-    content: initialContent,
-    onUpdate: ({ editor }) => {
-      onSave(editor.getHTML())
-    },
-  })
-
-  const handleDrop = useCallback(
-    (event: DragEvent) => {
-      event.preventDefault()
-      const file = event.dataTransfer?.files[0]
-      if (file && file.type.startsWith("image/")) {
-        const reader = new FileReader()
-        reader.onload = (e) => {
-          editor
-            ?.chain()
-            .focus()
-            .setImage({ src: e.target?.result as string })
-            .run()
-        }
-        reader.readAsDataURL(file)
-      }
-    },
-    [editor],
-  )
-
-  useEffect(() => {
-    const element = document.querySelector(".ProseMirror")
-    if (element) {
-      element.addEventListener("drop", handleDrop)
-      return () => element.removeEventListener("drop", handleDrop)
-    }
-  }, [handleDrop])
-
-  return <EditorContent editor={editor} />
-}
+import { useRouter, useSearchParams } from "next/navigation"
+import { useEffect, useState, useCallback } from "react"
+import Editor from "@/components/Editor"
+import getSupabaseBrowser from '@/lib/supabase-browser'
 
 export default function EditorPage() {
-  const [content, setContent] = useState("")
-  const supabase = createClientComponentClient()
   const router = useRouter()
-
+  const searchParams = useSearchParams()
+  const slug = searchParams.get('slug')
+  const [page, setPage] = useState({ id: '', content: '', title: '' })
+  const [loading, setLoading] = useState(true)
+  const [saveFunction, setSaveFunction] = useState(null)
+  
+  // Fetch the page content
   useEffect(() => {
-    const checkUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) {
-        router.push("/admin")
+    if (!slug) {
+      router.push('/')
+      return
+    }
+    
+    async function fetchPage() {
+      setLoading(true)
+      try {
+        const supabase = getSupabaseBrowser()
+        const { data, error } = await supabase
+          .from('pages')
+          .select('*')
+          .eq('slug', slug)
+          .single()
+          
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching page:', error)
+          throw error
+        }
+        
+        if (data) {
+          setPage(data)
+        } else {
+          // New page - initialize with empty content
+          setPage({ id: '', content: '', title: slug })
+        }
+      } catch (err) {
+        console.error('Failed to load page:', err)
+      } finally {
+        setLoading(false)
       }
     }
-    checkUser()
-  }, [supabase.auth, router])
-
-  const handleSave = async (newContent: string) => {
-    setContent(newContent)
-    const { data, error } = await supabase
-      .from("wiki_pages")
-      .upsert({ content: newContent, updated_at: new Date().toISOString() })
-    if (error) console.error("Error saving content:", error)
+    
+    fetchPage()
+  }, [slug, router])
+  
+  // Function to handle content saving
+  const handleSave = useCallback(async (content) => {
+    // This function is just a pass-through to the Editor's own save function
+    // The actual save logic is in the Editor component
+    if (saveFunction) {
+      return await saveFunction()
+    }
+    return true
+  }, [saveFunction])
+  
+  // Receive save function reference from the Editor component
+  const handleSaveRef = useCallback((fn) => {
+    setSaveFunction(() => fn)
+  }, [])
+  
+  if (!slug) return null
+  
+  if (loading) {
+    return (
+      <div className="container mx-auto p-4">
+        <h1 className="text-3xl font-bold mb-4">Loading editor...</h1>
+        <div className="animate-pulse h-64 bg-gray-100 rounded-md"></div>
+      </div>
+    )
   }
-
+  
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-4">Wiki Editor</h1>
-      <Tiptap initialContent={content} onSave={handleSave} />
+      <h1 className="text-3xl font-bold mb-4">Editing: {page.title || slug}</h1>
+      <Editor 
+        content={page.content || ''} 
+        pageId={page.id} 
+        slug={slug} 
+        onSave={handleSave}
+        saveRef={handleSaveRef}
+      />
     </div>
   )
 }

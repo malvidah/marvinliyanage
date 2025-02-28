@@ -10,7 +10,9 @@ export const authOptions = {
   callbacks: {
     async session({ session }) {
       if (session.user) {
-        session.user.isAdmin = true; // Or implement your own logic
+        // Only specific emails should be admins
+        const adminEmails = process.env.ADMIN_EMAILS?.split(',') || [];
+        session.user.isAdmin = adminEmails.includes(session.user.email);
       }
       return session;
     },

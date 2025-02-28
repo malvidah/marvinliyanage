@@ -9,6 +9,7 @@ import PageContent from '@/components/PageContent'
 import Editor from '@/components/Editor'
 import EditButton from '@/components/EditButton'
 import getSupabaseBrowser from '@/lib/supabase-browser'
+import ContentRenderer from '@/components/ContentRenderer'
 
 export default function PageWrapper({ 
   page: initialPage, 
@@ -30,47 +31,35 @@ export default function PageWrapper({
   const router = useRouter()
   const [graphUpdateTrigger, setGraphUpdateTrigger] = useState(0);
   
-  // For debugging, add this console log
-  useEffect(() => {
-    console.log('Session status:', status, 'Admin:', session?.user?.isAdmin)
-  }, [session, status])
-  
-  // Create the page if needed
+  // Simplified page creation logic
   useEffect(() => {
     async function createPage() {
-      // Only create a page if explicitly requested with the 'create' parameter
-      // OR if the user is coming from a link click (createNewPage is true)
       if (!initialPage && (createParam === 'true' || createNewPage)) {
         console.log('Creating new page:', slug);
-        // First decode the URL-encoded slug to remove %20 etc.
         const decodedSlug = decodeURIComponent(slug);
         
-        // Format the title from the slug - replace hyphens with spaces and capitalize
+        // Format the title more concisely
         const formattedTitle = decodedSlug
           .replace(/-/g, ' ')
-          .split(' ')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(' ');
+          .replace(/\b\w/g, c => c.toUpperCase()); // Capitalize first letter of each word
         
-        // Create a new page with the formatted title
         const { data: newPage } = await getSupabaseBrowser()
           .from('pages')
           .insert({
             title: formattedTitle,
             slug: decodedSlug,
-            content: '', // Empty content
+            content: '',
           })
           .select();
         
-        if (newPage && newPage[0]) {
+        if (newPage?.[0]) {
           setPage(newPage[0]);
           setEditedTitle(newPage[0].title);
           setPageContent(newPage[0].content);
         }
         
         setLoading(false);
-      } else if (!initialPage && createParam !== 'true' && !createNewPage) {
-        // Page doesn't exist and we're not explicitly creating it
+      } else if (!initialPage) {
         setLoading(false);
       }
     }
@@ -78,12 +67,36 @@ export default function PageWrapper({
     if (createNewPage || (createParam === 'true' && !page)) {
       createPage();
     } else if (!initialPage && !loading) {
-      // If page doesn't exist and we're not creating it, stop loading
       setLoading(false);
     }
   }, [initialPage, slug, createParam, createNewPage, page, loading]);
   
-  // Handle title save
+  // Simplified title save function
+  const handleTitleSave = async () => {
+    if (!page?.id) return false;
+    
+    try {
+      // Just update the title
+      const { error } = await getSupabaseBrowser()
+        .from('pages')
+        .update({ title: editedTitle })
+        .eq('id', page.id);
+        
+      if (error) {
+        console.error('Error updating title:', error);
+        return false;
+      }
+      
+      // Update local state
+      setPage(prev => prev ? {...prev, title: editedTitle} : prev);
+      return true;
+    } catch (err) {
+      console.error('Error saving title:', err);
+      return false;
+    }
+  };
+  
+  // Add back the needed function that was removed
   const handleSaveTitle = async (content) => {
     if (!page?.id) return false
     
@@ -128,8 +141,10 @@ export default function PageWrapper({
         return false;
       }
       
-      // Only update the graph after a successful save
-      setGraphUpdateTrigger(prev => prev + 1);
+      // Ensure graph updates after save
+      setTimeout(() => {
+        setGraphUpdateTrigger(prev => prev + 1);
+      }, 500); // Delay to ensure database writes complete
       
       return true;
     } catch (err) {
@@ -138,116 +153,59 @@ export default function PageWrapper({
     }
   }
   
-  // Handle title changes that create new slugs
-  const handleTitleSave = async () => {
-    if (!page?.id) return false;
-    
-    try {
-      // Update title only first
-      const { error: titleError } = await getSupabaseBrowser()
-        .from('pages')
-        .update({ title: editedTitle })
-        .eq('id', page.id);
-        
-      if (titleError) {
-        console.error('Error updating title:', titleError);
-        return false;
-      }
-      
-      // Generate new slug from title (optional - only if slug change is desired)
-      const newSlug = editedTitle
-        .toLowerCase()
-        .replace(/\s+/g, '-')
-        .replace(/[^\w\-]+/g, '')
-        .replace(/\-\-+/g, '-')
-        .replace(/^-+/, '')
-        .replace(/-+$/, '');
-      
-      // If user wants to update the slug too, add a toggle or checkbox
-      const updateSlug = false; // Set this based on user input
-      
-      if (updateSlug && newSlug !== page.slug) {
-        // Update the slug in this page
-        const { error: slugError } = await getSupabaseBrowser()
-          .from('pages')
-          .update({ slug: newSlug })
-          .eq('id', page.id);
-          
-        if (slugError) {
-          console.error('Error updating slug:', slugError);
-          return true; // At least title was updated
-        }
-        
-        // Update links in other pages
-        const { data: pagesWithLinks } = await getSupabaseBrowser()
-          .from('pages')
-          .select('id, content')
-          .filter('content', 'ilike', `%[${page.slug}]%`);
-          
-        if (pagesWithLinks) {
-          for (const p of pagesWithLinks) {
-            const updatedContent = p.content.replace(
-              new RegExp(`\\[${page.slug}\\]`, 'g'), 
-              `[${newSlug}]`
-            );
-            
-            await getSupabaseBrowser()
-              .from('pages')
-              .update({ content: updatedContent })
-              .eq('id', p.id);
-          }
-        }
-        
-        // Update local state
-        setPage(prev => prev ? {...prev, slug: newSlug} : prev);
-        
-        // Navigate to new URL without creating a new page
-        router.push(`/${newSlug}`);
-      }
-      
-      // Update local state with new title
-      setPage(prev => prev ? {...prev, title: editedTitle} : prev);
-      
-      return true;
-    } catch (err) {
-      console.error('Error in handleTitleSave:', err);
-      return false;
-    }
-  };
+  // Reset edit mode when page loads or changes
+  useEffect(() => {
+    setIsEditing(false);
+  }, [slug, initialPage]);
   
   // Set up save function for EditButton
   const setSaveFunction = useCallback((saveFunction) => {
     // Create a more reliable wrapped function
     const wrappedSaveFunction = async () => {
       try {
-        const success = await saveFunction();
-        if (success) {
-          // Only attempt title updates if the title has changed
-          if (editedTitle !== page?.title) {
-            return await handleTitleSave();
-          }
-          // Otherwise just update the content
-          return await handleSaveTitle(page?.content || '');
+        let success = true;
+        
+        // Only attempt to save if we have a save function
+        if (saveFunction) {
+          success = await saveFunction();
         }
-        return false;
+        
+        // Update title if needed and if previous step was successful
+        if (success && editedTitle !== page?.title) {
+          await handleTitleSave();
+        }
+        
+        // Always return to view mode, regardless of save success
+        setTimeout(() => {
+          setIsEditing(false);
+        }, 300);
+        
+        return success;
       } catch (error) {
         console.error('Error saving:', error);
+        // Still exit editing mode even on error
+        setTimeout(() => {
+          setIsEditing(false);
+        }, 300);
         return false;
       }
     };
     
     savePageRef.current = wrappedSaveFunction;
-  }, [page?.content, page?.id, page?.title, editedTitle]);
+  }, [page?.title, editedTitle, handleTitleSave]);
   
   // Toggle edit mode
   const toggleEditMode = useCallback(() => {
-    setIsEditing(prev => {
-      if (!prev) {
-        setEditedTitle(page?.title || '')
+    setIsEditing(prevState => {
+      if (!prevState) {
+        setEditedTitle(page?.title || '');
       }
-      return !prev
-    })
-  }, [page?.title])
+      return !prevState;
+    });
+  }, [page?.title]);
+  
+  // Determine if content is structured (JSON) or HTML string
+  const isStructuredContent = typeof page?.content === 'object'
   
   return (
     <Layout>
@@ -323,7 +281,11 @@ export default function PageWrapper({
               }}
             />
           ) : (
-            <PageContent content={page.content} />
+            isStructuredContent ? (
+              <ContentRenderer content={page?.content} />
+            ) : (
+              <PageContent content={page?.content || ''} />
+            )
           )
         ) : (
           <div className="text-center py-10">

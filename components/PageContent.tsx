@@ -47,23 +47,27 @@ export default function PageContent({ content = '' }) {
         }
       }
       
-      // Replace all [slug] with the actual title from cache or use slug as fallback
-      let processedHtml = content;
+      // Process each link once, with a clear replacement strategy
+      let processedContent = content;
+      const replacements = [];
       matches.forEach(match => {
         const slug = match[1];
-        const fullMatch = match[0]; // The full [slug] text
-        const title = pageTitleCache[slug] || slug; // Use the page title from cache if available
+        const title = pageTitleCache[slug] || slug;
         
-        // Replace with a link that uses lowercase styling
-        processedHtml = processedHtml.replace(
-          fullMatch,
-          `<a href="/${slug}" class="page-link inline-flex items-center px-2.5 py-0.5 rounded-md font-medium bg-purple-100 text-purple-800 hover:opacity-90 lowercase" data-slug="${slug}">${title}</a>`
-        );
+        replacements.push({
+          original: match[0],
+          replacement: `<a href="/${slug}?create=true" class="page-link inline-flex items-center px-2.5 py-0.5 rounded-md font-medium bg-purple-100 text-purple-800 hover:opacity-90 lowercase" data-slug="${slug}">${title}</a>`
+        });
       });
+      
+      // Apply all replacements
+      for (const {original, replacement} of replacements) {
+        processedContent = processedContent.replace(original, replacement);
+      }
       
       // Process mentions
       const mentionRegex = /@([a-zA-Z0-9_]+)/g;
-      const mentionMatches = [...processedHtml.matchAll(mentionRegex)];
+      const mentionMatches = [...processedContent.matchAll(mentionRegex)];
       
       // Process all mentions at once instead of sequential replacements
       if (mentionMatches.length > 0) {
@@ -76,8 +80,8 @@ export default function PageContent({ content = '' }) {
           const startIndex = match.index!;
           
           // Check if this mention is inside an HTML tag (already processed)
-          const previousChar = processedHtml.charAt(startIndex - 1);
-          const nextCharsCheck = processedHtml.substring(startIndex, startIndex + 50);
+          const previousChar = processedContent.charAt(startIndex - 1);
+          const nextCharsCheck = processedContent.substring(startIndex, startIndex + 50);
           
           // Skip if it appears to be inside a tag already
           if (previousChar === '"' || previousChar === "'" || 
@@ -99,17 +103,17 @@ export default function PageContent({ content = '' }) {
         replacements.sort((a, b) => b.index - a.index);
         
         // Apply replacements
-        let result = processedHtml;
+        let result = processedContent;
         for (const {index, length, replacement} of replacements) {
           result = result.substring(0, index) + replacement + result.substring(index + length);
         }
         
-        processedHtml = result;
+        processedContent = result;
       }
       
       // Process external links to add orange styling
       const urlRegex = /<a\s+(?:[^>]*?\s+)?href="(https?:\/\/[^"]+)"(?:\s+[^>]*?)?>(?!<span\s+class="page-link">)(.*?)<\/a>/g;
-      processedHtml = processedHtml.replace(urlRegex, (match, url, text) => {
+      processedContent = processedContent.replace(urlRegex, (match, url, text) => {
         // Skip YouTube embeds
         if (url.includes('youtube.com') || url.includes('youtu.be')) {
           return match;
@@ -128,7 +132,7 @@ export default function PageContent({ content = '' }) {
       
       // Process YouTube embeds to ensure they're centered and URLs are hidden
       const youtubeRegex = /<p>https?:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]+)(?:[^\s<]*)<\/p>/g;
-      processedHtml = processedHtml.replace(youtubeRegex, (match, videoId) => {
+      processedContent = processedContent.replace(youtubeRegex, (match, videoId) => {
         return `<div class="youtube-container">
           <iframe 
             width="640" 
@@ -142,25 +146,12 @@ export default function PageContent({ content = '' }) {
       });
       
       // Sanitize and set the processed content
-      const sanitizedContent = DOMPurify.sanitize(processedHtml, {
+      const sanitizedContent = DOMPurify.sanitize(processedContent, {
         ADD_ATTR: ['target', 'rel', 'data-slug', 'allowfullscreen'],
         ADD_TAGS: ['iframe'],
-        ADD_CLASSES: {
-          'a': ['page-link', 'url-link', 'mention', 'inline-flex', 'items-center', 'px-2.5', 'py-0.5', 'rounded-md', 'font-medium', 
-                'bg-purple-100', 'text-purple-800', 'hover:opacity-90', 'bg-black', 'text-white', 'bg-orange-100', 'text-orange-800']
-        }
       });
 
-      // Process links to add create=true for wiki-style links
-      const processedContent = sanitizedContent.replace(
-        /<a href="\/([^"]+)"/g, 
-        (match, slug) => {
-          // Add create=true to the URL for wiki links (generated from [slug] format)
-          return `<a href="/${slug}?create=true"`
-        }
-      );
-
-      setProcessedContent(processedContent);
+      setProcessedContent(sanitizedContent);
     }
     
     processContent();

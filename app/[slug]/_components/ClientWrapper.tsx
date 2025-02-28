@@ -24,6 +24,8 @@ export default function ClientWrapper({
         slug={slug}
         createNewPage={createNewPage}
         setCreateNewPage={setCreateNewPage}
+        updateTrigger={updateTrigger}
+        onContentSaved={handleContentSaved}
       />
       
       {children}
