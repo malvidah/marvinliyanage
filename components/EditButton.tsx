@@ -3,8 +3,9 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { getSupabaseBrowser } from '@supabase/auth-helpers-nextjs'
+import getSupabaseBrowser from '@/lib/supabase-browser'
 import { deletePages } from '@/lib/page-utils'
+import { CheckIcon, XMarkIcon, TrashIcon } from '@heroicons/react/24/outline'
 
 interface EditButtonProps {
   onClick: () => void
@@ -124,27 +125,19 @@ export default function EditButton({ onClick, isEditing, onSave, pageId, pageSlu
               {isSaving ? (
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
               ) : (
-                <CheckIcon />
+                <CheckIcon className="h-5 w-5" />
               )}
-            </button>
-            
-            <button
-              onClick={onClick}
-              disabled={isSaving || isDeleting}
-              className="flex items-center justify-center w-9 h-9 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300"
-            >
-              <XMarkIcon />
             </button>
             
             <button
               onClick={handleDelete}
               disabled={isSaving || isDeleting}
-              className="flex items-center justify-center w-9 h-9 rounded-full bg-red-600 text-white hover:bg-red-700"
+              className="flex items-center justify-center w-9 h-9 rounded-full bg-red-400 text-white hover:bg-red-500"
             >
               {isDeleting ? (
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
               ) : (
-                <TrashIcon />
+                <TrashIcon className="h-5 w-5" />
               )}
             </button>
           </>
