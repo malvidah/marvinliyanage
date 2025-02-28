@@ -1,17 +1,10 @@
 import ClientWrapper from './_components/ClientWrapper';
-import { notFound } from 'next/navigation';
 import getSupabaseServer from '@/lib/supabase-server';
 
-// Define the correct props type structure for Next.js pages
-interface PageParams {
-  params: {
-    slug: string;
-  };
-  searchParams?: { [key: string]: string | string[] | undefined };
-}
-
-export default async function Page({ params }: PageParams) {
-  const { slug } = params;
+// Using JSDoc comment to override TypeScript inference
+/** @param {any} props */
+export default async function Page(props) {
+  const { slug } = props.params;
   const supabase = getSupabaseServer();
   
   // Fetch the page data
@@ -33,7 +26,7 @@ export default async function Page({ params }: PageParams) {
   return (
     <ClientWrapper 
       page={page}
-      otherPages={otherPages}
+      otherPages={otherPages || []}
       slug={slug}
     />
   );
