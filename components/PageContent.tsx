@@ -18,7 +18,7 @@ export default function PageContent({ content = '' }) {
   const [processedContent, setProcessedContent] = useState('');
   
   useEffect(() => {
-    async function processLinks() {
+    async function processContent() {
       if (!content) {
         setProcessedContent('');
         return;
@@ -61,12 +61,9 @@ export default function PageContent({ content = '' }) {
         );
       });
       
-      // Then process mentions - improved version
-      const processedWithLinks = processedHtml; // Store the result after processing links
-      let processedWithMentions = processedWithLinks;
-      
+      // Process mentions
       const mentionRegex = /@([a-zA-Z0-9_]+)/g;
-      const mentionMatches = [...processedWithLinks.matchAll(mentionRegex)];
+      const mentionMatches = [...processedHtml.matchAll(mentionRegex)];
       
       // Process all mentions at once instead of sequential replacements
       if (mentionMatches.length > 0) {
@@ -79,8 +76,8 @@ export default function PageContent({ content = '' }) {
           const startIndex = match.index!;
           
           // Check if this mention is inside an HTML tag (already processed)
-          const previousChar = processedWithLinks.charAt(startIndex - 1);
-          const nextCharsCheck = processedWithLinks.substring(startIndex, startIndex + 50);
+          const previousChar = processedHtml.charAt(startIndex - 1);
+          const nextCharsCheck = processedHtml.substring(startIndex, startIndex + 50);
           
           // Skip if it appears to be inside a tag already
           if (previousChar === '"' || previousChar === "'" || 
@@ -102,19 +99,55 @@ export default function PageContent({ content = '' }) {
         replacements.sort((a, b) => b.index - a.index);
         
         // Apply replacements
-        let result = processedWithLinks;
+        let result = processedHtml;
         for (const {index, length, replacement} of replacements) {
           result = result.substring(0, index) + replacement + result.substring(index + length);
         }
         
-        processedWithMentions = result;
+        processedHtml = result;
       }
       
+      // Process external links to add orange styling
+      const urlRegex = /<a\s+(?:[^>]*?\s+)?href="(https?:\/\/[^"]+)"(?:\s+[^>]*?)?>(?!<span\s+class="page-link">)(.*?)<\/a>/g;
+      processedHtml = processedHtml.replace(urlRegex, (match, url, text) => {
+        // Skip YouTube embeds
+        if (url.includes('youtube.com') || url.includes('youtu.be')) {
+          return match;
+        }
+        
+        // Skip if it's already a page-link or mention
+        if (match.includes('class="page-link"') || match.includes('class="inline-flex items-center px-2.5 py-0.5 rounded-md font-medium bg-black text-white')) {
+          return match;
+        }
+        
+        return `<a href="${url}" target="_blank" rel="noopener noreferrer" 
+                  class="url-link inline-flex items-center px-2.5 py-0.5 rounded-md font-medium bg-orange-100 text-orange-800 hover:opacity-90">
+                  ${text || url}
+                </a>`;
+      });
+      
+      // Process YouTube embeds to ensure they're centered and URLs are hidden
+      const youtubeRegex = /<p>https?:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]+)(?:[^\s<]*)<\/p>/g;
+      processedHtml = processedHtml.replace(youtubeRegex, (match, videoId) => {
+        return `<div class="youtube-container">
+          <iframe 
+            width="640" 
+            height="360" 
+            src="https://www.youtube-nocookie.com/embed/${videoId}" 
+            frameborder="0" 
+            allowfullscreen
+            class="mx-auto rounded-md"
+          ></iframe>
+        </div>`;
+      });
+      
       // Sanitize and set the processed content
-      const sanitizedContent = DOMPurify.sanitize(processedWithMentions, {
-        ADD_ATTR: ['target', 'rel', 'data-slug'],
+      const sanitizedContent = DOMPurify.sanitize(processedHtml, {
+        ADD_ATTR: ['target', 'rel', 'data-slug', 'allowfullscreen'],
+        ADD_TAGS: ['iframe'],
         ADD_CLASSES: {
-          'a': ['page-link', 'mention', 'inline-flex', 'items-center', 'px-2.5', 'py-0.5', 'rounded-md', 'font-medium', 'bg-purple-100', 'text-purple-800', 'hover:opacity-90', 'bg-black', 'text-white']
+          'a': ['page-link', 'url-link', 'mention', 'inline-flex', 'items-center', 'px-2.5', 'py-0.5', 'rounded-md', 'font-medium', 
+                'bg-purple-100', 'text-purple-800', 'hover:opacity-90', 'bg-black', 'text-white', 'bg-orange-100', 'text-orange-800']
         }
       });
 
@@ -130,7 +163,7 @@ export default function PageContent({ content = '' }) {
       setProcessedContent(processedContent);
     }
     
-    processLinks();
+    processContent();
   }, [content]);
   
   useEffect(() => {

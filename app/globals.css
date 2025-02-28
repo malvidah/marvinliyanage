@@ -54,3 +54,332 @@ body {
   max-width: none;
 }
 
+/* YouTube embed styling - hide URL */
+.ProseMirror .youtube-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  margin: 1rem auto;
+}
+
+.ProseMirror .youtube-video {
+  border-radius: 0.5rem;
+  overflow: hidden;
+  width: 100%;
+}
+
+/* Hide YouTube URL that might appear below the embed */
+.ProseMirror .youtube-video + p:first-of-type {
+  display: none;
+}
+
+/* Image styling with hover controls */
+.ProseMirror .image-wrapper {
+  position: relative;
+  display: inline-block;
+  margin: 1rem auto;
+}
+
+.ProseMirror .image-wrapper:hover .image-controls {
+  opacity: 1;
+}
+
+.ProseMirror .image-controls {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background-color: white;
+  border-radius: 4px;
+  padding: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+/* Link styling with title preview */
+.ProseMirror a[title] {
+  position: relative;
+}
+
+.ProseMirror a[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  background-color: #FFEDD5;
+  color: #C2410C;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  z-index: 10;
+}
+
+/* Image styling */
+.ProseMirror img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1rem auto;
+  display: block;
+}
+
+/* Link styling */
+.ProseMirror a {
+  cursor: pointer;
+}
+
+/* Page link styling */
+.page-link {
+  background-color: #F3E8FF;
+  border-radius: 0.25rem;
+  padding: 0.1rem 0.2rem;
+  color: #6D28D9;
+  cursor: pointer;
+}
+
+/* URL link styling with title */
+.url-link, 
+a[href^="http"]:not(.page-link):not(.mention) {
+  background-color: #FFEDD5;
+  border-radius: 0.25rem;
+  padding: 0.1rem 0.2rem;
+  color: #C2410C;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Show title on hover for links with title attribute */
+a[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  background-color: #FFEDD5;
+  color: #C2410C;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  z-index: 10;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Fix mention styling to keep them black with white text */
+.mention,
+a[href^="https://twitter.com/"],
+a[href^="https://x.com/"] {
+  background-color: #000000 !important;
+  border-radius: 0.25rem;
+  padding: 0.1rem 0.2rem;
+  color: #FFFFFF !important;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Make sure URL styling doesn't override mentions */
+a[href^="http"]:not(.page-link):not([href^="https://twitter.com/"]):not([href^="https://x.com/"]) {
+  background-color: #FFEDD5;
+  border-radius: 0.25rem;
+  padding: 0.1rem 0.2rem;
+  color: #C2410C;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Make sure images in view mode are also styled properly */
+.page-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1rem auto;
+  display: block;
+}
+
+/* Improve YouTube embed styling in both edit and view modes */
+.ProseMirror .youtube-video,
+.page-content iframe[src*="youtube.com"],
+.page-content iframe[src*="youtu.be"] {
+  display: block;
+  max-width: 640px;
+  width: 100%;
+  border-radius: 0.5rem;
+  margin: 1rem auto; /* Center videos */
+  aspect-ratio: 16/9; /* Maintain aspect ratio */
+}
+
+/* Hide YouTube URL that appears below the embed */
+.ProseMirror .youtube-video + p,
+.page-content iframe[src*="youtube.com"] + p,
+.page-content iframe[src*="youtu.be"] + p {
+  display: none;
+}
+
+/* Additional selector to catch YouTube URLs */
+p:has(+ iframe[src*="youtube.com"]),
+p:has(+ iframe[src*="youtu.be"]) {
+  display: none;
+}
+
+/* Fix styling for page links and mentions in the editor */
+.ProseMirror .page-link,
+.ProseMirror a[data-type="page-link"],
+.ProseMirror a[href^="/"]:not([href^="http"]) {
+  background-color: #F3E8FF !important;
+  border-radius: 0.25rem;
+  padding: 0.1rem 0.2rem;
+  color: #6D28D9 !important;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Fix mention styling in the editor */
+.ProseMirror .mention,
+.ProseMirror a[data-type="mention"],
+.ProseMirror a[href^="https://twitter.com/"],
+.ProseMirror a[href^="https://x.com/"] {
+  background-color: #000000 !important;
+  border-radius: 0.25rem;
+  padding: 0.1rem 0.2rem;
+  color: #FFFFFF !important;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Make sure the editor properly styles mentions that start with @ */
+.ProseMirror p a:has(span:first-child:only-child:first-letter:is(@)) {
+  background-color: #000000 !important;
+  color: #FFFFFF !important;
+  border-radius: 0.25rem;
+  padding: 0.1rem 0.2rem;
+}
+
+/* Add drag and drop styling */
+.ProseMirror.drag-over {
+  border: 2px dashed #6D28D9;
+  border-radius: 0.5rem;
+  background-color: rgba(109, 40, 217, 0.05);
+}
+
+/* Style for the editor container during drag */
+.drag-over .ProseMirror {
+  background-color: rgba(109, 40, 217, 0.05);
+}
+
+/* Hide "SML" text that might appear after images */
+.ProseMirror img + :is(p, span, div):contains("SML") {
+  display: none;
+}
+
+/* Alternative approach using adjacent sibling selector */
+.ProseMirror img + p:has(text[content="SML"]) {
+  display: none;
+}
+
+/* Hide any standalone "SML" paragraphs */
+.ProseMirror p:only-child:contains("SML") {
+  display: none;
+}
+
+/* Improve image centering and spacing */
+.resizable-image-wrapper {
+  position: relative;
+  display: inline-block;
+  margin: 0.5rem auto;
+  text-align: center;
+  width: auto;
+  max-width: 100%;
+}
+
+/* Center the wrapper in its container */
+.ProseMirror p:has(.resizable-image-wrapper) {
+  text-align: center;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Keep the image styling */
+.resizable-image {
+  display: block;
+  max-width: 100%;
+  height: auto !important;
+  border-radius: 0.5rem;
+  margin: 0;
+}
+
+/* Make sure the resize handle stays on the image edge */
+.resize-handle {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  height: 20px;
+  width: 4px;
+  transform: translateY(-50%);
+  background-color: transparent;
+  cursor: col-resize;
+  opacity: 0;
+  transition: opacity 0.2s, background-color 0.2s;
+  z-index: 10;
+}
+
+/* Only show resize handle in editor mode */
+.page-content .resize-handle {
+  display: none;
+}
+
+/* Make resize handle visible on hover */
+.resizable-image-wrapper:hover .resize-handle {
+  opacity: 1;
+  background-color: rgba(109, 40, 217, 0.4);
+}
+
+.resizable-image-wrapper.resizing .resize-handle {
+  opacity: 1;
+  background-color: rgba(109, 40, 217, 0.7);
+}
+
+/* Add image delete button */
+.image-delete-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background-color: rgba(239, 68, 68, 0.9);
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 20;
+  border: none;
+  cursor: pointer;
+}
+
+.resizable-image-wrapper:hover .image-delete-button {
+  opacity: 1;
+}
+
+.image-delete-button:hover {
+  background-color: rgba(220, 38, 38, 1);
+}
+
+/* Only show in editor mode */
+.page-content .image-delete-button {
+  display: none;
+}
+
