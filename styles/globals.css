@@ -115,3 +115,30 @@ h1, h2, h3, h4, h5, h6 {
     @apply bg-background text-foreground;
   }
 }
+
+/* Add this to your globals.css */
+.h1-match-title h1 {
+  font-size: 1.875rem; /* text-3xl */
+  font-weight: 700; /* font-bold */
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+/* Ensure consistent styling between edit and view modes */
+.ProseMirror h1, .prose h1 {
+  font-size: 1.875rem !important; /* text-3xl */
+  font-weight: 700 !important; /* font-bold */
+  margin-top: 0 !important;
+  margin-bottom: 0.5rem !important;
+}
+
+/* Override any conflicting styles */
+.ProseMirror {
+  font-family: 'Archivo', sans-serif !important;
+}
+
+/* Match the font sizes in the editor to the rendered output */
+.ProseMirror p, .prose p {
+  font-size: 1.125rem !important;
+  line-height: 1.75rem !important;
+}

@@ -1,113 +1,172 @@
+'use client'
+
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import DOMPurify from 'isomorphic-dompurify';
-import { useRouter } from 'next/router';
-import supabase from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
+import getSupabaseBrowser from '@/lib/supabase-browser';
 
 interface PageContentProps {
   content: string;
 }
 
-export default function PageContent({ content }: PageContentProps) {
-  const [processedContent, setProcessedContent] = useState('');
+// Cache for page titles to reduce database queries
+const pageTitleCache: Record<string, string> = {};
+
+export default function PageContent({ content = '' }) {
   const router = useRouter();
+  const [processedContent, setProcessedContent] = useState('');
   
-  // Handle page link clicks - check if page exists, create if needed
-  const handlePageLinkClick = async (e: MouseEvent, slug: string) => {
-    e.preventDefault();
-    
-    // Check if the page exists
-    const { data, error } = await supabase
-      .from('pages')
-      .select('slug')
-      .eq('slug', slug)
-      .single();
+  useEffect(() => {
+    async function processLinks() {
+      if (!content) {
+        setProcessedContent('');
+        return;
+      }
       
-    // If page doesn't exist, create it
-    if (error && error.code === 'PGRST116') {
-      const title = slug
-        .split('-')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
+      // Extract all page links from the content
+      const linkRegex = /\[([^\]]+)\]/g;
+      const matches = [...content.matchAll(linkRegex)];
+      const slugs = matches.map(match => match[1]);
+      
+      // Get unique slugs to fetch
+      const uniqueSlugs = [...new Set(slugs)].filter(slug => !pageTitleCache[slug]);
+      
+      // Fetch current titles for all slugs not in cache
+      if (uniqueSlugs.length > 0) {
+        const { data } = await getSupabaseBrowser()
+          .from('pages')
+          .select('slug, title')
+          .in('slug', uniqueSlugs);
+          
+        // Update cache with fetched titles
+        if (data) {
+          data.forEach(page => {
+            pageTitleCache[page.slug] = page.title;
+          });
+        }
+      }
+      
+      // Replace all [slug] with the actual title from cache or use slug as fallback
+      let processedHtml = content;
+      matches.forEach(match => {
+        const slug = match[1];
+        const fullMatch = match[0]; // The full [slug] text
+        const title = pageTitleCache[slug] || slug; // Use the page title from cache if available
         
-      await supabase
-        .from('pages')
-        .insert({
-          title,
-          slug,
-          content: '',
+        // Replace with a link that uses lowercase styling
+        processedHtml = processedHtml.replace(
+          fullMatch,
+          `<a href="/${slug}" class="page-link inline-flex items-center px-2.5 py-0.5 rounded-md font-medium bg-purple-100 text-purple-800 hover:opacity-90 lowercase" data-slug="${slug}">${title}</a>`
+        );
+      });
+      
+      // Then process mentions - improved version
+      const processedWithLinks = processedHtml; // Store the result after processing links
+      let processedWithMentions = processedWithLinks;
+      
+      const mentionRegex = /@([a-zA-Z0-9_]+)/g;
+      const mentionMatches = [...processedWithLinks.matchAll(mentionRegex)];
+      
+      // Process all mentions at once instead of sequential replacements
+      if (mentionMatches.length > 0) {
+        // Create a map of positions to replacements
+        const replacements: {index: number, length: number, replacement: string}[] = [];
+        
+        mentionMatches.forEach(match => {
+          const username = match[1];
+          const fullMatch = match[0]; // The full @username text
+          const startIndex = match.index!;
+          
+          // Check if this mention is inside an HTML tag (already processed)
+          const previousChar = processedWithLinks.charAt(startIndex - 1);
+          const nextCharsCheck = processedWithLinks.substring(startIndex, startIndex + 50);
+          
+          // Skip if it appears to be inside a tag already
+          if (previousChar === '"' || previousChar === "'" || 
+              nextCharsCheck.includes('</a>')) {
+            return;
+          }
+          
+          replacements.push({
+            index: startIndex,
+            length: fullMatch.length,
+            replacement: `<a href="https://twitter.com/${username}" target="_blank" rel="noopener noreferrer" 
+                class="inline-flex items-center px-2.5 py-0.5 rounded-md font-medium bg-black text-white hover:opacity-90">
+                ${fullMatch}
+            </a>`
+          });
         });
-    }
-    
-    // Navigate to the page
-    router.push(`/${slug}`);
-  };
-  
-  useEffect(() => {
-    if (!content) {
-      setProcessedContent('');
-      return;
-    }
-    
-    // Process content to turn markdown/special syntax into HTML with chips
-    let processed = content;
-    
-    // Transform @account links into black chips
-    processed = processed.replace(
-      /@(\w+)/g, 
-      '<a href="https://x.com/$1" target="_blank" rel="noopener noreferrer" class="inline-flex items-center px-2.5 py-0.5 rounded-md font-medium bg-black text-white hover:opacity-90">@$1</a>'
-    );
-    
-    // Transform [page link] into purple chips
-    processed = processed.replace(
-      /\[([^\]]+)\]/g, 
-      '<a href="/$1" class="page-link inline-flex items-center px-2.5 py-0.5 rounded-md font-medium bg-purple-100 text-purple-800 hover:opacity-90" data-slug="$1">$1</a>'
-    );
-    
-    // Handle YouTube embeds
-    processed = processed.replace(
-      /<iframe.*?youtube.com\/embed\/([a-zA-Z0-9_-]+).*?<\/iframe>/g,
-      '<div class="aspect-w-16 aspect-h-9 my-4"><iframe src="https://www.youtube.com/embed/$1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>'
-    );
-    
-    // Sanitize the HTML to prevent XSS
-    const clean = DOMPurify.sanitize(processed, {
-      ADD_TAGS: ['iframe'],
-      ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling', 'data-slug']
-    });
-    
-    setProcessedContent(clean);
-  }, [content]);
-  
-  // Add click handlers for page links
-  useEffect(() => {
-    if (!processedContent) return;
-    
-    const pageLinks = document.querySelectorAll('.page-link');
-    pageLinks.forEach(link => {
-      link.addEventListener('click', (e) => {
-        const slug = (link as HTMLElement).dataset.slug;
-        if (slug) {
-          handlePageLinkClick(e as MouseEvent, slug);
+        
+        // Sort replacements from end to beginning to avoid position shifts
+        replacements.sort((a, b) => b.index - a.index);
+        
+        // Apply replacements
+        let result = processedWithLinks;
+        for (const {index, length, replacement} of replacements) {
+          result = result.substring(0, index) + replacement + result.substring(index + length);
+        }
+        
+        processedWithMentions = result;
+      }
+      
+      // Sanitize and set the processed content
+      const sanitizedContent = DOMPurify.sanitize(processedWithMentions, {
+        ADD_ATTR: ['target', 'rel', 'data-slug'],
+        ADD_CLASSES: {
+          'a': ['page-link', 'mention', 'inline-flex', 'items-center', 'px-2.5', 'py-0.5', 'rounded-md', 'font-medium', 'bg-purple-100', 'text-purple-800', 'hover:opacity-90', 'bg-black', 'text-white']
         }
       });
-    });
+
+      // Process links to add create=true for wiki-style links
+      const processedContent = sanitizedContent.replace(
+        /<a href="\/([^"]+)"/g, 
+        (match, slug) => {
+          // Add create=true to the URL for wiki links (generated from [slug] format)
+          return `<a href="/${slug}?create=true"`
+        }
+      );
+
+      setProcessedContent(processedContent);
+    }
     
-    return () => {
-      pageLinks.forEach(link => {
-        link.removeEventListener('click', () => {});
-      });
+    processLinks();
+  }, [content]);
+  
+  useEffect(() => {
+    // Add click handler for internal page links
+    const handleLinkClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (target.tagName === 'A' && target.classList.contains('page-link')) {
+        event.preventDefault();
+        const slug = target.getAttribute('data-slug');
+        if (slug) {
+          // Add the create=true parameter to create the page if it doesn't exist
+          router.push(`/${slug}?create=true`);
+        }
+      }
     };
-  }, [processedContent]);
-
-  if (!processedContent) {
-    return <p className="text-gray-500 italic">This page is empty. Click the edit button to add content.</p>;
+    
+    document.addEventListener('click', handleLinkClick);
+    return () => {
+      document.removeEventListener('click', handleLinkClick);
+    };
+  }, [router]);
+  
+  if (!content || content.trim() === '') {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <p className="text-gray-300 text-xl italic font-sans">
+          This page is empty.
+        </p>
+      </div>
+    );
   }
-
+  
   return (
     <div 
-      className="prose prose-lg max-w-none"
-      dangerouslySetInnerHTML={{ __html: processedContent }}
+      className="page-content"
+      dangerouslySetInnerHTML={{ __html: processedContent }} 
     />
   );
 } 

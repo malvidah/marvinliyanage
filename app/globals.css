@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Make sure there's no conflicting background styles here */
+html, body {
+  background-color: white;
+}
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
@@ -10,28 +15,42 @@
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(to bottom, transparent, rgb(var(--background-end-rgb))) rgb(var(--background-start-rgb));
+  background: white;
 }
 
+/* Update ProseMirror styles to match view mode */
 .ProseMirror {
   min-height: 300px;
-  padding: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  padding: 1rem 0; /* Remove horizontal padding */
+  border: none; /* Remove the border */
+  border-radius: 0;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
 }
 
 .ProseMirror:focus {
   outline: none;
-  border-color: #4a5568;
+  border: none; /* Remove border on focus too */
+  box-shadow: none; /* Remove any focus shadow */
 }
 
 .ProseMirror h1 {
   font-size: 2em;
   font-weight: bold;
+  margin-top: 0.67em;
+  margin-bottom: 0.67em;
 }
 
 .ProseMirror h2 {
   font-size: 1.5em;
   font-weight: bold;
+  margin-top: 0.83em;
+  margin-bottom: 0.83em;
+}
+
+/* Make sure the prose classes are consistent between view and edit */
+.prose .ProseMirror {
+  max-width: none;
 }
 

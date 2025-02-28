@@ -1,12 +1,16 @@
 import type React from "react"
 import "./globals.css"
 import { Inter } from "next/font/google"
+import { Metadata } from 'next'
+import { NextAuthProvider } from './providers'
+import { LinkTitleProvider } from '@/lib/LinkTitleContext'
+import AutoArchive from '@/components/AutoArchive'
 
 const inter = Inter({ subsets: ["latin"] })
 
-export const metadata = {
-  title: "Minimalist Wiki",
-  description: "A beautiful and simple personal wiki",
+export const metadata: Metadata = {
+  title: "Marvin Liyanage",
+  description: "Personal wiki for Marvin Liyanage",
     generator: 'v0.dev'
 }
 
@@ -17,7 +21,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <NextAuthProvider>
+          <LinkTitleProvider>
+            {children}
+          </LinkTitleProvider>
+          <AutoArchive />
+        </NextAuthProvider>
+      </body>
     </html>
   )
 }

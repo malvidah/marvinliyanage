@@ -1,3 +1,6 @@
+// This file is likely out of date with the App Router pattern
+// Let's update all imports to use the new utility files instead
+
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://qrynqscwtctqbasivcvb.supabase.co';

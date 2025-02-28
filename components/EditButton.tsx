@@ -1,185 +1,170 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+'use client'
+
+import { useState, useCallback, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 
 interface EditButtonProps {
   onClick: () => void
   isEditing: boolean
   onSave?: () => Promise<boolean>
+  pageId?: string
+  pageSlug?: string
 }
 
-export default function EditButton({ onClick, isEditing, onSave }: EditButtonProps) {
+// SVG icons
+const StarIcon = () => (
+  <span className="text-lg">✧</span>
+);
+
+const CheckIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+  </svg>
+);
+
+const XMarkIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+  </svg>
+);
+
+const TrashIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+  </svg>
+);
+
+export default function EditButton({ onClick, isEditing, onSave, pageId, pageSlug }: EditButtonProps) {
   const { data: session } = useSession()
-  const [isWorking, setIsWorking] = useState(false)
-  const isMounted = useRef(true)
-  const buttonRef = useRef<HTMLButtonElement>(null)
-  const [isMac, setIsMac] = useState(false)
+  const router = useRouter()
   const [isSaving, setIsSaving] = useState(false)
-  const [saveError, setSaveError] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
   
-  // Define forceToggle with useCallback BEFORE it's used in useEffect
-  const forceToggle = useCallback(() => {
-    console.log('Force toggling edit mode')
-    // Immediately toggle without waiting
-    onClick()
-    
-    // If we were in edit mode, trigger save in background
-    if (isEditing && onSave) {
-      try {
-        onSave().catch(err => console.error('Background save error:', err))
-      } catch (err) {
-        console.error('Error in background save:', err)
-      }
-    }
-    
-    if (isMounted.current) {
-      setIsWorking(false)
-    }
-  }, [isEditing, onClick, onSave])
-  
-  // Normal toggle with save attempt
-  const triggerToggle = useCallback(async () => {
-    if (isWorking) return
-    
-    console.log('Trigger toggle called')
-    setIsWorking(true)
-    
-    try {
-      if (isEditing && onSave) {
-        // Quick save attempt when exiting edit mode
-        console.log('Attempting save before toggle')
-        
-        try {
-          // Try to save but with a strict timeout
-          const savePromise = onSave()
-          const timeoutPromise = new Promise<boolean>((_, reject) => {
-            setTimeout(() => reject(new Error('Save timeout')), 1000)
-          })
-          
-          await Promise.race([savePromise, timeoutPromise])
-        } catch (err) {
-          console.log('Save timed out or failed, toggling anyway')
-        }
-      }
+  // Handle successful save animation
+  useEffect(() => {
+    if (showSuccess) {
+      const timer = setTimeout(() => {
+        setShowSuccess(false)
+      }, 2000)
       
-      // Always toggle mode
-      onClick()
-    } catch (err) {
-      console.error('Error in triggerToggle:', err)
-      // Force toggle on error
-      onClick()
-    } finally {
-      if (isMounted.current) {
-        setIsWorking(false)
-      }
+      return () => clearTimeout(timer)
     }
-  }, [isEditing, isWorking, onClick, onSave])
+  }, [showSuccess])
   
-  // Detect if user is on Mac 
-  useEffect(() => {
-    setIsMac(navigator.platform.toUpperCase().indexOf('MAC') >= 0)
-  }, [])
-  
-  // Set up keyboard shortcuts with capture phase
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Check for Cmd+E on Mac or Ctrl+E on other platforms
-      if (((isMac && e.metaKey) || (!isMac && e.ctrlKey)) && e.key.toLowerCase() === 'e') {
-        console.log('Keyboard shortcut detected')
-        e.preventDefault()
-        e.stopPropagation()
-        
-        // Force toggle immediately
-        forceToggle()
-        return false
-      }
-    }
+  // Handle save button click
+  const handleSave = useCallback(async () => {
+    if (!onSave) return
     
-    // Use capture phase to intercept events before they reach editor
-    document.addEventListener('keydown', handleKeyDown, true)
-    
-    return () => {
-      isMounted.current = false
-      document.removeEventListener('keydown', handleKeyDown, true)
-    }
-  }, [forceToggle, isMac])
-  
-  // Only show for admin users
-  if (!session?.user?.isAdmin) return null
-  
-  const handleButtonClick = (e: React.MouseEvent) => {
-    console.log('Button clicked')
-    e.stopPropagation()
-    e.preventDefault()
-    
-    // Don't wait for anything, just toggle immediately
-    forceToggle()
-  }
-  
-  const keyboardShortcut = isMac ? '⌘E' : 'Ctrl+E'
-  
-  // Handle save action with error handling
-  const handleSave = async () => {
-    if (!onSave) return;
-    
-    setIsSaving(true);
-    setSaveError(null);
-    
+    setIsSaving(true)
     try {
-      const success = await onSave();
+      const success = await onSave()
       
       if (success) {
-        // If save was successful, exit edit mode
-        onClick();
-      } else {
-        setSaveError('Failed to save changes');
+        setShowSuccess(true)
+        setTimeout(() => {
+          onClick()
+        }, 500)
       }
-    } catch (err) {
-      console.error('Error saving:', err);
-      setSaveError('Error saving changes');
+    } catch (error) {
+      console.error('Save error:', error)
     } finally {
-      setIsSaving(false);
+      setIsSaving(false)
     }
-  };
+  }, [onSave, onClick])
+  
+  // Handle delete button click
+  const handleDelete = useCallback(async () => {
+    if (!pageId || !pageSlug) return
+    
+    if (!confirm(`Are you sure you want to delete this page? This action cannot be undone.`)) {
+      return
+    }
+    
+    setIsDeleting(true)
+    
+    try {
+      const response = await fetch('/api/delete-page', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          id: pageId,
+          slug: pageSlug 
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete page');
+      }
+      
+      router.push('/');
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert(`Failed to delete page: ${error.message}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [pageId, pageSlug, router]);
+  
+  if (!session?.user?.isAdmin) return null
   
   return (
-    <div 
-      className="fixed bottom-0 right-0 mb-8 mr-8 z-[99999]"
-      style={{ pointerEvents: 'all' }} 
-      onClick={e => e.stopPropagation()}
-    >
-      {/* Show error message if save failed */}
-      {saveError && (
-        <div className="absolute -top-8 right-0 text-red-500 text-sm">
-          {saveError}
+    <div className="relative">
+      {showSuccess && (
+        <div className="absolute -top-8 right-0 text-green-500 text-sm">
+          Saved!
         </div>
       )}
       
-      <button
-        ref={buttonRef}
-        onClick={handleButtonClick}
-        className="group flex items-center justify-center w-12 h-12 shadow-lg rounded-full transition-all duration-200 hover:scale-110"
-        style={{
-          background: isEditing ? 'white' : '#6B46C1',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          transform: isWorking ? 'scale(0.95)' : 'scale(1)',
-        }}
-        aria-label={isEditing ? `Save and exit (${keyboardShortcut})` : `Edit page (${keyboardShortcut})`}
-      >
-        <span 
-          className="text-2xl transition-transform duration-200 group-hover:rotate-12" 
-          style={{ color: isEditing ? 'black' : 'white' }}
-        >
-          {isWorking ? (
-            <span className="animate-pulse">✦</span>
-          ) : (
-            <span>✦</span>
-          )}
-        </span>
-      </button>
-      
-      {/* Keyboard shortcut indicator */}
-      <div className="absolute -top-7 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-70">
-        {keyboardShortcut}
+      <div className="flex space-x-2">
+        {isEditing ? (
+          <>
+            <button
+              onClick={handleSave}
+              disabled={isSaving || isDeleting}
+              className="flex items-center justify-center w-9 h-9 rounded-full bg-purple-600 text-white hover:bg-purple-700"
+            >
+              {isSaving ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              ) : (
+                <CheckIcon />
+              )}
+            </button>
+            
+            <button
+              onClick={onClick}
+              disabled={isSaving || isDeleting}
+              className="flex items-center justify-center w-9 h-9 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300"
+            >
+              <XMarkIcon />
+            </button>
+            
+            <button
+              onClick={handleDelete}
+              disabled={isSaving || isDeleting}
+              className="flex items-center justify-center w-9 h-9 rounded-full bg-red-600 text-white hover:bg-red-700"
+            >
+              {isDeleting ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              ) : (
+                <TrashIcon />
+              )}
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={onClick}
+            className="flex items-center justify-center w-9 h-9 rounded-full bg-purple-600 text-white hover:bg-purple-700 group"
+          >
+            <span className="text-lg group-hover:hidden">✧</span>
+            <span className="text-lg hidden group-hover:block">✦</span>
+          </button>
+        )}
       </div>
     </div>
   )
