@@ -1,9 +1,8 @@
 import ClientWrapper from './_components/ClientWrapper';
 import getSupabaseServer from '@/lib/supabase-server';
 
-// Using JSDoc comment to override TypeScript inference
 /** @param {any} props */
-export default function ViewPage(props) {
+export default async function ViewPage(props) {
   const { slug } = props.params;
   const supabase = getSupabaseServer();
   
