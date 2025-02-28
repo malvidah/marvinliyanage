@@ -1,14 +1,12 @@
 'use client'
 
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createBrowserClient } from '@supabase/ssr'
+import { Database } from '@/types/supabase'
 
-// Create a singleton client to prevent multiple instances
-let client: ReturnType<typeof createClientComponentClient> | null = null
-
+// Create a type-safe Supabase client
 export default function getSupabaseBrowser() {
-  if (!client) {
-    client = createClientComponentClient()
-  }
-  
-  return client
+  return createBrowserClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
 } 

@@ -253,10 +253,10 @@ export default function PageGraphView({
           router.push(`/${d.slug}`);
         }
       })
-      .call(d3.drag<SVGGElement, GraphNode>()
+      .call((d3.drag<SVGGElement, GraphNode>()
         .on("start", dragstarted)
         .on("drag", dragged)
-        .on("end", dragended) as any);
+        .on("end", dragended)) as any);
     
     // Add circles for nodes
     node.append("circle")
