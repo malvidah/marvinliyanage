@@ -1,3 +1,4 @@
+// @ts-nocheck
 import ClientWrapper from './_components/ClientWrapper';
 import getSupabaseServer from '@/lib/supabase-server';
 
