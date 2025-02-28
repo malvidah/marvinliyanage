@@ -1,37 +1,41 @@
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
+import ClientWrapper from './_components/ClientWrapper';
+import { notFound } from 'next/navigation';
+import getSupabaseServer from '@/lib/supabase-server';
 
-export default async function ViewPage({ params }: { params: { slug: string } }) {
-  const supabase = createServerComponentClient({ cookies })
+// Define the correct props type structure for Next.js pages
+interface PageParams {
+  params: {
+    slug: string;
+  };
+  searchParams?: { [key: string]: string | string[] | undefined };
+}
 
-  const { data: page } = await supabase.from("wiki_pages").select("content").eq("slug", params.slug).single()
-
-  if (!page) {
-    return <div>Page not found</div>
-  }
-
-  const renderContent = (content: string) => {
-    return content.replace(/@(\w+)|(\[.*?\])/g, (match, account, pageLink) => {
-      if (account) {
-        return `<a href="https://x.com/${account}" class="bg-black text-white px-2 py-1 rounded">${match}</a>`
-      }
-      if (pageLink) {
-        const linkText = pageLink.slice(1, -1)
-        return `<a href="/view/${linkText}" class="bg-purple-100 text-purple-800 px-2 py-1 rounded">${linkText}</a>`
-      }
-      return match
-    })
-  }
-
+export default async function Page({ params }: PageParams) {
+  const { slug } = params;
+  const supabase = getSupabaseServer();
+  
+  // Fetch the page data
+  const { data: page } = await supabase
+    .from('pages')
+    .select('*')
+    .eq('slug', slug)
+    .single();
+  
+  // Fetch other pages for linking
+  const { data: otherPages } = await supabase
+    .from('pages')
+    .select('slug, title')
+    .neq('slug', slug);
+  
+  // If page doesn't exist and create=true isn't in URL, show 404
+  // Otherwise, pass null page to client and let it handle creation
+  
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-4">{params.slug}</h1>
-      <div dangerouslySetInnerHTML={{ __html: renderContent(page.content) }} />
-      <div className="mt-8">
-        <h2 className="text-2xl font-bold mb-4">Connected Pages</h2>
-        {/* Implement graph view here */}
-      </div>
-    </div>
-  )
+    <ClientWrapper 
+      page={page}
+      otherPages={otherPages}
+      slug={slug}
+    />
+  );
 }
 
