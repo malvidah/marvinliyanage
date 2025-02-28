@@ -3,7 +3,7 @@ import getSupabaseServer from '@/lib/supabase-server';
 
 // Using JSDoc comment to override TypeScript inference
 /** @param {any} props */
-export default async function Page(props) {
+export default function ViewPage(props) {
   const { slug } = props.params;
   const supabase = getSupabaseServer();
   

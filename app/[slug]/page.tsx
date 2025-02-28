@@ -1,43 +1,47 @@
-import { createServerClient } from '@/utils/supabase-server'
-import ClientWrapper from './_components/ClientWrapper'
+import { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import getSupabaseServer from '@/lib/supabase-server';
+import ClientWrapper from './_components/ClientWrapper';
 
-export async function generateMetadata({ params }) {
-  const { slug } = params
-  const supabase = createServerClient()
+// Define metadata generation for this page
+export async function generateMetadata({ params }): Promise<Metadata> {
+  const { slug } = params;
   
+  const supabase = getSupabaseServer();
   const { data: page } = await supabase
     .from('pages')
     .select('title')
     .eq('slug', slug)
-    .single()
+    .single();
   
   return {
-    title: page ? `${page.title} — Marvin Liyanage` : 'Page Not Found',
-  }
+    title: page?.title || slug,
+  };
 }
 
+// The page component
 export default async function Page({ params }) {
-  const supabase = createServerClient()
-  const { slug } = params
+  const { slug } = params;
+  const supabase = getSupabaseServer();
   
-  // Server-side data fetching
+  // Fetch page data
   const { data: page } = await supabase
     .from('pages')
     .select('*')
     .eq('slug', slug)
-    .single()
+    .single();
   
+  // Fetch other pages for linking
   const { data: otherPages } = await supabase
     .from('pages')
     .select('slug, title')
-    .neq('slug', slug)
+    .neq('slug', slug);
   
-  // Pass data to the client wrapper
   return (
-    <ClientWrapper
-      page={page || null}
+    <ClientWrapper 
+      page={page}
       otherPages={otherPages || []}
       slug={slug}
     />
-  )
+  );
 } 
