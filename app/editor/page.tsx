@@ -1,11 +1,12 @@
 "use client"
 
 import { useRouter, useSearchParams } from "next/navigation"
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, Suspense } from "react"
 import Editor from "@/components/Editor"
 import getSupabaseBrowser from '@/lib/supabase-browser'
 
-export default function EditorPage() {
+// Create a wrapper component that uses useSearchParams
+function EditorContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const slug = searchParams.get('slug')
@@ -88,6 +89,20 @@ export default function EditorPage() {
         saveRef={handleSaveRef}
       />
     </div>
+  )
+}
+
+// Main component that wraps EditorContent with Suspense
+export default function EditorPage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto p-4">
+        <h1 className="text-3xl font-bold mb-4">Loading editor...</h1>
+        <div className="animate-pulse h-64 bg-gray-100 rounded-md"></div>
+      </div>
+    }>
+      <EditorContent />
+    </Suspense>
   )
 }
 
