@@ -109,7 +109,7 @@ const flagStyle = (c: string): React.CSSProperties => ({
 function Card({ listing, isFav, isArchived, note, onToggleFav, onToggleArchive, onNoteChange, isDragging, isOver }:
   { listing: Listing; isFav: boolean; isArchived: boolean; note: string; onToggleFav: (id:string)=>void; onToggleArchive: (id:string)=>void; onNoteChange:(id:string,v:string)=>void; isDragging?:boolean; isOver?:boolean }) {
 
-  const [flipped, setFlipped] = useState(false)
+  const [flipped, setFlipped] = useState(isArchived)
   const [local, setLocal] = useState(note)
   const timer = useRef<ReturnType<typeof setTimeout>|null>(null)
 
@@ -233,7 +233,7 @@ function Card({ listing, isFav, isArchived, note, onToggleFav, onToggleArchive, 
         </div>
 
         {/* ── BACK ── */}
-        <div style={{ ...back, padding:18, background:'#ffffff', borderRadius:14 }}>
+        <div style={{ ...back, padding:18, background: isArchived ? '#fff8f8' : '#ffffff', borderRadius:14, border: isArchived ? '1px solid #fecaca' : 'none' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:12 }}>
             <div>
               <div style={{ fontFamily:'Georgia,serif', fontSize:15, color:'#111827', marginBottom:2 }}>{listing.name}</div>
@@ -242,12 +242,14 @@ function Card({ listing, isFav, isArchived, note, onToggleFav, onToggleArchive, 
             <button onClick={() => setFlipped(false)}
               style={{ background:'none', border:'none', cursor:'pointer', fontSize:18, color:'#9ca3af', lineHeight:1, flexShrink:0, marginLeft:8 }}>←</button>
           </div>
-          <div style={{ fontFamily:'monospace', fontSize:9, textTransform:'uppercase', letterSpacing:'0.1em', color:'#9ca3af', marginBottom:6 }}>Your notes (synced with Reese)</div>
+          <div style={{ fontFamily:'monospace', fontSize:9, textTransform:'uppercase', letterSpacing:'0.1em', color: isArchived ? '#ef4444' : '#9ca3af', marginBottom:6 }}>
+            {isArchived ? 'Ruled out — reason / notes' : 'Your notes (synced with Reese)'}
+          </div>
           <textarea
             value={local}
             onChange={e => handleNote(e.target.value)}
             placeholder="Leave notes for each other… pros, cons, questions to ask…"
-            style={{ flex:1, width:'100%', minHeight:140, fontSize:13, color:'#374151', background:'#f9fafb', border:'1px solid #e5e7eb', borderRadius:10, padding:12, resize:'none', outline:'none', fontFamily:'inherit', lineHeight:1.55 }}
+            style={{ flex:1, width:'100%', minHeight:140, fontSize:13, color:'#374151', background: isArchived ? '#fff1f1' : '#f9fafb', border: `1px solid ${isArchived ? '#fca5a5' : '#e5e7eb'}`, borderRadius:10, padding:12, resize:'none', outline:'none', fontFamily:'inherit', lineHeight:1.55 }}
           />
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:10 }}>
             <span style={{ fontFamily:'monospace', fontSize:9, color:'#9ca3af' }}>auto-saves · visible to both of you</span>
