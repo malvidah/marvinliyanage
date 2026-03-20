@@ -62,3 +62,24 @@ a {
   color: inherit;
   text-decoration: none;
 }
+
+.nav-link {
+  font-family: var(--font-mono), 'Courier New', monospace;
+  font-size: 11px;
+  color: var(--ink2);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: color 0.15s;
+}
+.nav-link:hover {
+  color: var(--ink);
+}
+
+.project-link:hover,
+.contact-card:hover {
+  border-color: var(--border2);
+}
+
+.cta-primary:hover {
+  background: var(--accent2);
+}

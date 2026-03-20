@@ -131,20 +131,7 @@ export default function Home() {
             <a
               key={l.href}
               href={l.href}
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                color: "var(--ink2)",
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                transition: "color 0.15s",
-              }}
-              onMouseEnter={(e) =>
-                ((e.target as HTMLElement).style.color = "var(--ink)")
-              }
-              onMouseLeave={(e) =>
-                ((e.target as HTMLElement).style.color = "var(--ink2)")
-              }
+              className="nav-link"
             >
               {l.label}
             </a>
