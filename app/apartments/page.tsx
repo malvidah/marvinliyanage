@@ -21,6 +21,7 @@ interface SharedState {
   favorites: string[]
   notes: Record<string, string>
   favoriteOrder: string[]
+  archived: string[]
 }
 
 // ── Data ──────────────────────────────────────────────────────────────────────
@@ -85,6 +86,7 @@ const FILTERS = [
   { key:'inunit', label:'In-unit W/D' },
   { key:'new', label:'New finds' },
   { key:'favorites', label:'Favorited ★' },
+  { key:'archived', label:'Archived' },
 ]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -104,8 +106,8 @@ const flagStyle = (c: string): React.CSSProperties => ({
 })
 
 // ── Card ──────────────────────────────────────────────────────────────────────
-function Card({ listing, isFav, note, onToggleFav, onNoteChange, isDragging, isOver }:
-  { listing: Listing; isFav: boolean; note: string; onToggleFav: (id:string)=>void; onNoteChange:(id:string,v:string)=>void; isDragging?:boolean; isOver?:boolean }) {
+function Card({ listing, isFav, isArchived, note, onToggleFav, onToggleArchive, onNoteChange, isDragging, isOver }:
+  { listing: Listing; isFav: boolean; isArchived: boolean; note: string; onToggleFav: (id:string)=>void; onToggleArchive: (id:string)=>void; onNoteChange:(id:string,v:string)=>void; isDragging?:boolean; isOver?:boolean }) {
 
   const [flipped, setFlipped] = useState(false)
   const [local, setLocal] = useState(note)
@@ -119,16 +121,17 @@ function Card({ listing, isFav, note, onToggleFav, onNoteChange, isDragging, isO
     timer.current = setTimeout(() => onNoteChange(listing.id, v), 800)
   }
 
-  const topBorder = listing.status === 'top' ? '2px solid #16a34a'
+  const topBorder = isArchived ? '1px solid #e5e7eb'
+    : listing.status === 'top' ? '2px solid #16a34a'
     : listing.type === 'cohousing' ? '2px solid #7c3aed'
     : '1px solid #e5e7eb'
 
   const cardStyle: React.CSSProperties = {
-    background: '#ffffff',
+    background: isArchived ? '#fafafa' : '#ffffff',
     border: topBorder,
     borderRadius: 14,
     boxShadow: isOver ? '0 0 0 2px #7c3aed, 0 8px 24px rgba(0,0,0,0.12)' : '0 1px 4px rgba(0,0,0,0.07)',
-    opacity: isDragging ? 0.4 : 1,
+    opacity: isDragging ? 0.4 : isArchived ? 0.6 : 1,
     cursor: isDragging ? 'grabbing' : 'default',
     transform: isOver ? 'scale(1.01)' : 'none',
     transition: 'box-shadow 0.15s, transform 0.15s, opacity 0.15s',
@@ -206,14 +209,24 @@ function Card({ listing, isFav, note, onToggleFav, onNoteChange, isDragging, isO
               style={{ fontFamily:'monospace', fontSize:10, color:'#16a34a', textDecoration:'none', letterSpacing:'0.04em' }}>
               View listing →
             </a>
-            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:4 }}>
               <button onClick={() => setFlipped(true)}
-                style={{ fontFamily:'monospace', fontSize:10, color:'#9ca3af', background:'none', border:'none', cursor:'pointer', padding:'4px 8px', borderRadius:6 }}>
-                ✏ note
+                style={{ fontFamily:'monospace', fontSize:10, color:'#9ca3af', background:'none', border:'none', cursor:'pointer', padding:'4px 6px', borderRadius:6 }}>
+                ✏
               </button>
               <button onClick={() => onToggleFav(listing.id)}
-                style={{ fontSize:17, background:'none', border:'none', cursor:'pointer', lineHeight:1, color: isFav ? '#eab308' : '#d1d5db', transition:'color 0.15s' }}>
+                title={isFav ? 'Remove favorite' : 'Add to favorites'}
+                style={{ fontSize:16, background:'none', border:'none', cursor:'pointer', lineHeight:1, color: isFav ? '#eab308' : '#d1d5db', transition:'color 0.15s', padding:'4px 4px' }}>
                 ★
+              </button>
+              <button onClick={() => onToggleArchive(listing.id)}
+                title={isArchived ? 'Unarchive — restore to list' : 'Archive — rule this out'}
+                style={{ fontFamily:'monospace', fontSize:10, background:'none', border:'1px solid', cursor:'pointer', padding:'3px 7px', borderRadius:6, transition:'all 0.15s', lineHeight:1.4,
+                  color: isArchived ? '#b91c1c' : '#9ca3af',
+                  borderColor: isArchived ? '#fca5a5' : '#e5e7eb',
+                  background: isArchived ? '#fff1f1' : 'none',
+                }}>
+                {isArchived ? '↺ Unarchive' : '✕'}
               </button>
             </div>
           </div>
@@ -258,7 +271,7 @@ function Badge({ label, color, text }: { label:string; color:string; text:string
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function ApartmentsPage() {
   const [filter, setFilter] = useState('all')
-  const [state, setState] = useState<SharedState>({ favorites:[], notes:{}, favoriteOrder:[] })
+  const [state, setState] = useState<SharedState>({ favorites:[], notes:{}, favoriteOrder:[], archived:[] })
   const [syncing, setSyncing] = useState(false)
   const [lastSynced, setLastSynced] = useState<Date|null>(null)
   const saveTimer = useRef<ReturnType<typeof setTimeout>|null>(null)
@@ -276,7 +289,11 @@ export default function ApartmentsPage() {
 
   async function loadState() {
     const { data, error } = await supabase.from('apartment_state').select('data').eq('key','shared').single()
-    if (!error && data?.data) { setState(data.data as SharedState); setLastSynced(new Date()) }
+    if (!error && data?.data) {
+      const loaded = data.data as SharedState
+      setState({ favorites:[], notes:{}, favoriteOrder:[], archived:[], ...loaded })
+      setLastSynced(new Date())
+    }
   }
 
   const persist = useCallback((next: SharedState) => {
@@ -302,6 +319,18 @@ export default function ApartmentsPage() {
     setState(prev => { const next = { ...prev, notes:{ ...prev.notes, [id]:v } }; persist(next); return next })
   }
 
+  function toggleArchive(id: string) {
+    setState(prev => {
+      const has = (prev.archived || []).includes(id)
+      const archived = has ? prev.archived.filter(a=>a!==id) : [...(prev.archived||[]), id]
+      // also remove from favorites if archiving
+      const favorites = has ? prev.favorites : prev.favorites.filter(f=>f!==id)
+      const favoriteOrder = has ? prev.favoriteOrder : prev.favoriteOrder.filter(f=>f!==id)
+      const next = { ...prev, archived, favorites, favoriteOrder }
+      persist(next); return next
+    })
+  }
+
   // Drag handlers for favorites reorder
   function onDragStart(id: string) { dragId.current = id; setDraggingId(id) }
   function onDragOver(e: React.DragEvent, id: string) { e.preventDefault(); setOverId(id) }
@@ -322,11 +351,15 @@ export default function ApartmentsPage() {
 
   const favOrder = state.favoriteOrder.length > 0 ? state.favoriteOrder : state.favorites
 
+  const archived = state.archived || []
+  const isArchiveView = filter === 'archived'
+  const isFavView = filter === 'favorites'
+
   const visibleListings = (() => {
-    if (filter === 'favorites') {
-      return favOrder.map(id => LMAP[id]).filter(Boolean)
-    }
+    if (isArchiveView) return LISTINGS.filter(l => archived.includes(l.id))
+    if (isFavView) return favOrder.map(id => LMAP[id]).filter(l => l && !archived.includes(l.id))
     return LISTINGS.filter(l => {
+      if (archived.includes(l.id)) return false
       if (filter === 'all') return true
       if (filter === 'apartment') return l.type === 'apartment'
       if (filter === 'cohousing') return l.type === 'cohousing'
@@ -339,7 +372,6 @@ export default function ApartmentsPage() {
 
   const scored = visibleListings.filter(l => l.score > 0)
   const avgScore = scored.length ? Math.round(scored.reduce((a,b)=>a+b.score,0)/scored.length) : 0
-  const isFavView = filter === 'favorites'
 
   return (
     <div style={{ background:'#f8f7f5', color:'#111827', minHeight:'100vh', fontFamily:"'Instrument Sans', 'Helvetica Neue', Arial, sans-serif" }}>
@@ -352,16 +384,20 @@ export default function ApartmentsPage() {
           </h1>
         </div>
         <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
-          {FILTERS.map(f => (
-            <button key={f.key} onClick={() => setFilter(f.key)}
-              style={{ fontFamily:'monospace', fontSize:10, letterSpacing:'0.05em', textTransform:'uppercase', padding:'5px 12px', borderRadius:99, border:'1px solid', cursor:'pointer', transition:'all 0.12s',
-                background: filter===f.key ? '#111827' : '#ffffff',
-                color: filter===f.key ? '#ffffff' : '#6b7280',
-                borderColor: filter===f.key ? '#111827' : '#d1d5db',
-              }}>
-              {f.label}
-            </button>
-          ))}
+          {FILTERS.map(f => {
+            const isArchiveBtn = f.key === 'archived'
+            const active = filter === f.key
+            return (
+              <button key={f.key} onClick={() => setFilter(f.key)}
+                style={{ fontFamily:'monospace', fontSize:10, letterSpacing:'0.05em', textTransform:'uppercase', padding:'5px 12px', borderRadius:99, border:'1px solid', cursor:'pointer', transition:'all 0.12s',
+                  background: active ? (isArchiveBtn ? '#7f1d1d' : '#111827') : isArchiveBtn ? '#fff1f1' : '#ffffff',
+                  color: active ? '#ffffff' : isArchiveBtn ? '#b91c1c' : '#6b7280',
+                  borderColor: active ? (isArchiveBtn ? '#7f1d1d' : '#111827') : isArchiveBtn ? '#fecaca' : '#d1d5db',
+                }}>
+                {f.label}{isArchiveBtn && archived.length > 0 ? ` (${archived.length})` : ''}
+              </button>
+            )
+          })}
         </div>
       </header>
 
@@ -389,6 +425,11 @@ export default function ApartmentsPage() {
           Drag cards to reorder your favorites
         </div>
       )}
+      {isArchiveView && visibleListings.length > 0 && (
+        <div style={{ padding:'8px 28px 0', fontFamily:'monospace', fontSize:10, color:'#b91c1c', textTransform:'uppercase', letterSpacing:'0.1em' }}>
+          Ruled out — click ↺ Unarchive on any card to restore it
+        </div>
+      )}
 
       {/* ── Grid ── */}
       <div style={{ padding:'20px 28px 60px', display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(296px, 1fr))', gap:14 }}>
@@ -410,8 +451,10 @@ export default function ApartmentsPage() {
             <Card
               listing={l}
               isFav={state.favorites.includes(l.id)}
+              isArchived={archived.includes(l.id)}
               note={state.notes[l.id] || ''}
               onToggleFav={toggleFav}
+              onToggleArchive={toggleArchive}
               onNoteChange={updateNote}
               isDragging={draggingId === l.id}
               isOver={overId === l.id && draggingId !== l.id}
@@ -420,7 +463,7 @@ export default function ApartmentsPage() {
         ))}
         {visibleListings.length === 0 && (
           <div style={{ gridColumn:'1/-1', padding:48, textAlign:'center', fontFamily:'Georgia,serif', fontSize:22, fontStyle:'italic', color:'#9ca3af' }}>
-            {isFavView ? 'No favorites yet — star some listings!' : 'No listings match this filter.'}
+            {isArchiveView ? 'Nothing archived yet — use the ✕ button on a card to rule it out.' : isFavView ? 'No favorites yet — star some listings!' : 'No listings match this filter.'}
           </div>
         )}
       </div>
