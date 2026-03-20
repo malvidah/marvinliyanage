@@ -477,14 +477,19 @@ export default function ApartmentsPage() {
   const favOrder = state.favoriteOrder.length > 0 ? state.favoriteOrder : state.favorites
   const isArchiveView = filter === 'archived'
   const isFavView = filter === 'favorites'
+  const isAllView = filter === 'all'
   const topPickId = favOrder[0] || null
+
+  // Kanban groups (only used in All view)
+  const kanbanFavorited = favOrder.map(id => LMAP[id]).filter(l => l && !archived.includes(l.id))
+  const kanbanNew = LISTINGS.filter(l => !archived.includes(l.id) && !favOrder.includes(l.id))
 
   const visibleListings = (() => {
     if (isArchiveView) return LISTINGS.filter(l => archived.includes(l.id))
     if (isFavView) return favOrder.map(id => LMAP[id]).filter(l => l && !archived.includes(l.id))
+    if (isAllView) return [] // handled separately as kanban groups
     return LISTINGS.filter(l => {
       if (archived.includes(l.id)) return false
-      if (filter === 'all') return true
       if (filter === 'apartment') return l.type === 'apartment'
       if (filter === 'cohousing') return l.type === 'cohousing'
       if (filter === 'new') return l.isNew
@@ -494,8 +499,46 @@ export default function ApartmentsPage() {
     })
   })()
 
-  const scored = visibleListings.filter(l => l.score > 0)
+  const allForStats = isAllView
+    ? [...kanbanFavorited, ...kanbanNew]
+    : isArchiveView ? LISTINGS.filter(l => archived.includes(l.id)) : visibleListings
+  const scored = allForStats.filter(l => l.score > 0)
   const avgScore = scored.length ? Math.round(scored.reduce((a,b)=>a+b.score,0)/scored.length) : 0
+
+  // Shared card renderer to avoid repetition
+  function renderCard(l: Listing, i: number, draggable = false, showRank = false) {
+    return (
+      <div
+        key={l.id}
+        draggable={draggable}
+        onDragStart={draggable ? () => onDragStart(l.id) : undefined}
+        onDragOver={draggable ? (e) => onDragOver(e, l.id) : undefined}
+        onDrop={draggable ? () => onDrop(l.id) : undefined}
+        onDragEnd={draggable ? onDragEnd : undefined}
+        style={{ cursor: draggable ? 'grab' : 'default', animation:`fadeUp 0.25s ease ${i*30}ms both` }}
+      >
+        {showRank && (
+          <div style={{ fontFamily:'monospace', fontSize:10, color:'#9ca3af', marginBottom:4, textAlign:'center', letterSpacing:'0.06em' }}>
+            #{favOrder.indexOf(l.id)+1}
+          </div>
+        )}
+        <Card
+          listing={l}
+          isFav={state.favorites.includes(l.id)}
+          isArchived={archived.includes(l.id)}
+          isTopPick={l.id === topPickId}
+          note={state.notes[l.id] || ''}
+          photo={(state.photos || {})[l.id] || ''}
+          onToggleFav={toggleFav}
+          onToggleArchive={toggleArchive}
+          onNoteChange={updateNote}
+          onPhotoUpload={updatePhoto}
+          isDragging={draggingId === l.id}
+          isOver={overId === l.id && draggingId !== l.id}
+        />
+      </div>
+    )
+  }
 
   return (
     <div style={{ background:'#f8f7f5', color:'#111827', minHeight:'100vh', fontFamily:"'Instrument Sans', 'Helvetica Neue', Arial, sans-serif" }}>
@@ -525,7 +568,7 @@ export default function ApartmentsPage() {
       </header>
 
       <div style={{ padding:'10px 28px', background:'#f8f7f5', borderBottom:'1px solid #e5e7eb', display:'flex', flexWrap:'wrap', alignItems:'center', gap:24 }}>
-        {[{n:visibleListings.length,l:'listings'},{n:avgScore||0,l:'avg fit score'},{n:visibleListings.filter(l=>l.beds.includes('2BR')).length,l:'have 2BR'},{n:state.favorites.length,l:'favorited'}].map(s=>(
+        {[{n:allForStats.length,l:'listings'},{n:avgScore||0,l:'avg fit score'},{n:allForStats.filter(l=>l.beds.includes('2BR')).length,l:'have 2BR'},{n:state.favorites.length,l:'favorited'}].map(s=>(
           <div key={s.l} style={{ display:'flex', alignItems:'baseline', gap:5 }}>
             <span style={{ fontFamily:'Georgia,serif', fontSize:20 }}>{s.n||'—'}</span>
             <span style={{ fontSize:12, color:'#9ca3af' }}>{s.l}</span>
@@ -554,44 +597,58 @@ export default function ApartmentsPage() {
         </div>
       )}
 
-      <div style={{ padding:'20px 28px 60px', display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(296px, 1fr))', gap:16 }}>
-        {visibleListings.map((l, i) => (
-          <div
-            key={l.id}
-            draggable={isFavView}
-            onDragStart={isFavView ? () => onDragStart(l.id) : undefined}
-            onDragOver={isFavView ? (e) => onDragOver(e, l.id) : undefined}
-            onDrop={isFavView ? () => onDrop(l.id) : undefined}
-            onDragEnd={isFavView ? onDragEnd : undefined}
-            style={{ cursor: isFavView ? 'grab' : 'default', animation:`fadeUp 0.25s ease ${i*30}ms both` }}
-          >
-            {isFavView && (
-              <div style={{ fontFamily:'monospace', fontSize:10, color:'#9ca3af', marginBottom:4, textAlign:'center', letterSpacing:'0.06em' }}>
-                #{favOrder.indexOf(l.id)+1}
+      {/* ── KANBAN (All view) ── */}
+      {isAllView && (
+        <div style={{ padding:'24px 28px 60px', display:'flex', flexDirection:'column', gap:40 }}>
+          {/* Favorited group */}
+          <div>
+            <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
+              <span style={{ fontFamily:'Georgia,serif', fontSize:18, fontWeight:600, color:'#111827' }}>Favorited</span>
+              <span style={{ fontFamily:'monospace', fontSize:10, color:'#9ca3af', letterSpacing:'0.08em' }}>{kanbanFavorited.length} · drag to reorder</span>
+              <div style={{ flex:1, height:1, background:'#e5e7eb', marginLeft:4 }} />
+            </div>
+            {kanbanFavorited.length === 0 ? (
+              <div style={{ fontFamily:'Georgia,serif', fontSize:15, fontStyle:'italic', color:'#d1d5db', padding:'24px 0' }}>
+                Star a listing to add it here
+              </div>
+            ) : (
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(296px, 1fr))', gap:16 }}>
+                {kanbanFavorited.map((l, i) => renderCard(l, i, true, true))}
               </div>
             )}
-            <Card
-              listing={l}
-              isFav={state.favorites.includes(l.id)}
-              isArchived={archived.includes(l.id)}
-              isTopPick={l.id === topPickId}
-              note={state.notes[l.id] || ''}
-              photo={(state.photos || {})[l.id] || ''}
-              onToggleFav={toggleFav}
-              onToggleArchive={toggleArchive}
-              onNoteChange={updateNote}
-              onPhotoUpload={updatePhoto}
-              isDragging={draggingId === l.id}
-              isOver={overId === l.id && draggingId !== l.id}
-            />
           </div>
-        ))}
-        {visibleListings.length === 0 && (
-          <div style={{ gridColumn:'1/-1', padding:48, textAlign:'center', fontFamily:'Georgia,serif', fontSize:22, fontStyle:'italic', color:'#9ca3af' }}>
-            {isArchiveView ? 'Nothing archived yet — use ✕ on a card to rule it out.' : isFavView ? 'No favorites yet — star some listings!' : 'No listings match this filter.'}
+
+          {/* New / considering group */}
+          <div>
+            <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
+              <span style={{ fontFamily:'Georgia,serif', fontSize:18, fontWeight:600, color:'#111827' }}>Considering</span>
+              <span style={{ fontFamily:'monospace', fontSize:10, color:'#9ca3af', letterSpacing:'0.08em' }}>{kanbanNew.length} listings</span>
+              <div style={{ flex:1, height:1, background:'#e5e7eb', marginLeft:4 }} />
+            </div>
+            {kanbanNew.length === 0 ? (
+              <div style={{ fontFamily:'Georgia,serif', fontSize:15, fontStyle:'italic', color:'#d1d5db', padding:'24px 0' }}>
+                All listings are favorited or archived
+              </div>
+            ) : (
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(296px, 1fr))', gap:16 }}>
+                {kanbanNew.map((l, i) => renderCard(l, i, false, false))}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* ── FLAT GRID (all other filters) ── */}
+      {!isAllView && (
+        <div style={{ padding:'20px 28px 60px', display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(296px, 1fr))', gap:16 }}>
+          {visibleListings.map((l, i) => renderCard(l, i, isFavView, isFavView))}
+          {visibleListings.length === 0 && (
+            <div style={{ gridColumn:'1/-1', padding:48, textAlign:'center', fontFamily:'Georgia,serif', fontSize:22, fontStyle:'italic', color:'#9ca3af' }}>
+              {isArchiveView ? 'Nothing archived yet — use ✕ on a card to rule it out.' : isFavView ? 'No favorites yet — star some listings!' : 'No listings match this filter.'}
+            </div>
+          )}
+        </div>
+      )}
 
       <style>{`
         @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
