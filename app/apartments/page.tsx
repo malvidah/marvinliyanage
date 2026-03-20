@@ -43,7 +43,7 @@ const LISTINGS: Listing[] = [
     ],
     flags: [{ t: 'Up to 8 weeks free on select units', c: 'fb' }, { t: 'Utilities not included', c: 'fa' }],
     link: 'https://www.anthempdx.com',
-    note: "Burnside Corridor — Portland's best eastside food/bar/music strip. Peloton, yoga room, courtyard firepit. Feels more "corpo" aesthetically but ticks nearly every box.",
+    note: "Burnside Corridor — Portland's best eastside food/bar/music strip. Peloton, yoga room, courtyard firepit. Feels more 'corpo' aesthetically but ticks nearly every box.",
   },
   {
     id: 'homma', name: 'HOMMA HAUS Mount Tabor', addr: '5115 E Burnside St · North Tabor',
