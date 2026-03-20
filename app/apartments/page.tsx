@@ -106,8 +106,8 @@ const flagStyle = (c: string): React.CSSProperties => ({
 })
 
 // ── Card ──────────────────────────────────────────────────────────────────────
-function Card({ listing, isFav, isArchived, note, onToggleFav, onToggleArchive, onNoteChange, isDragging, isOver }:
-  { listing: Listing; isFav: boolean; isArchived: boolean; note: string; onToggleFav: (id:string)=>void; onToggleArchive: (id:string)=>void; onNoteChange:(id:string,v:string)=>void; isDragging?:boolean; isOver?:boolean }) {
+function Card({ listing, isFav, isArchived, isTopPick, note, onToggleFav, onToggleArchive, onNoteChange, isDragging, isOver }:
+  { listing: Listing; isFav: boolean; isArchived: boolean; isTopPick: boolean; note: string; onToggleFav: (id:string)=>void; onToggleArchive: (id:string)=>void; onNoteChange:(id:string,v:string)=>void; isDragging?:boolean; isOver?:boolean }) {
 
   const [flipped, setFlipped] = useState(isArchived)
   const [local, setLocal] = useState(note)
@@ -122,7 +122,7 @@ function Card({ listing, isFav, isArchived, note, onToggleFav, onToggleArchive, 
   }
 
   const topBorder = isArchived ? '1px solid #e5e7eb'
-    : listing.status === 'top' ? '2px solid #16a34a'
+    : isTopPick ? '2px solid #16a34a'
     : listing.type === 'cohousing' ? '2px solid #7c3aed'
     : '1px solid #e5e7eb'
 
@@ -157,7 +157,7 @@ function Card({ listing, isFav, isArchived, note, onToggleFav, onToggleArchive, 
         <div style={{ ...face, padding: 18 }}>
           {/* Badges */}
           <div style={{ display:'flex', flexWrap:'wrap', gap:4, marginBottom:8 }}>
-            {listing.status === 'top' && <Badge label="★ top pick" color="#dcfce7" text="#15803d" />}
+            {isTopPick && <Badge label="★ top pick" color="#dcfce7" text="#15803d" />}
             {listing.isNew && <Badge label="new" color="#f0fdf4" text="#15803d" />}
             {listing.type === 'cohousing' && <Badge label="cohousing" color="#f5f3ff" text="#6d28d9" />}
             {listing.beds.includes('2BR') ? <Badge label={listing.beds} color="#f5f3ff" text="#6d28d9" /> : <Badge label={listing.beds} color="#f9fafb" text="#6b7280" />}
@@ -372,6 +372,7 @@ export default function ApartmentsPage() {
     })
   })()
 
+  const topPickId = favOrder[0] || null
   const scored = visibleListings.filter(l => l.score > 0)
   const avgScore = scored.length ? Math.round(scored.reduce((a,b)=>a+b.score,0)/scored.length) : 0
 
@@ -454,6 +455,7 @@ export default function ApartmentsPage() {
               listing={l}
               isFav={state.favorites.includes(l.id)}
               isArchived={archived.includes(l.id)}
+              isTopPick={l.id === topPickId}
               note={state.notes[l.id] || ''}
               onToggleFav={toggleFav}
               onToggleArchive={toggleArchive}
