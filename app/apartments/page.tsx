@@ -16,6 +16,7 @@ interface Listing {
   status: 'top' | 'ok' | 'dead'; isNew: boolean
   rows: Row[]; flags: Flag[]; link: string; note: string
   gradient: string
+  lat: number; lng: number
 }
 interface SharedState {
   favorites: string[]
@@ -26,82 +27,82 @@ interface SharedState {
 }
 
 const LISTINGS: Listing[] = [
-  { id:'anthem', name:'Anthem PDX', addr:'1313 E Burnside St · Kerns', price:'2BR from $1,953', pn:'studio–2BR · built 2020 · 211 units', type:'apartment', beds:'2BR', score:78, status:'ok', isNew:true,
+  { id:'anthem', name:'Anthem PDX', addr:'1313 E Burnside St · Kerns', price:'2BR from $1,953', pn:'studio–2BR · built 2020 · 211 units', type:'apartment', beds:'2BR', score:78, status:'ok', isNew:true, lat:45.5236, lng:-122.6545,
     gradient:'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
     rows:[{l:'Natural light',v:'Big windows throughout',d:'g'},{l:'Kitchen',v:'Quartz counters · stainless',d:'g'},{l:'In-unit W/D',v:'Yes',d:'g'},{l:'Flooring',v:'Wood-look plank (no concrete)',d:'g'},{l:'2BR',v:'Available',d:'g'},{l:'AC',v:'Included in rent',d:'g'},{l:'Walk / Bike',v:'Walk 97 · Bike 100',d:'g'},{l:'Pets',v:'Yes, breed restrictions',d:'y'},{l:'Parking',v:'Unknown — ask',d:'y'}],
     flags:[{t:'Up to 8 weeks free on select units',c:'fb'},{t:'Utilities not included',c:'fa'}],
     link:'https://www.anthempdx.com', note:"Burnside Corridor — Portland's best eastside food/bar/music strip. Peloton, yoga room, courtyard firepit. Feels more 'corpo' aesthetically but ticks nearly every box." },
-  { id:'homma', name:'HOMMA HAUS Mount Tabor', addr:'5115 E Burnside St · North Tabor', price:'$2,995/mo', pn:'2BR/2.5BA · 1,150 sqft · smart home', type:'apartment', beds:'2BR', score:74, status:'ok', isNew:true,
+  { id:'homma', name:'HOMMA HAUS Mount Tabor', addr:'5115 E Burnside St · North Tabor', price:'$2,995/mo', pn:'2BR/2.5BA · 1,150 sqft · smart home', type:'apartment', beds:'2BR', score:74, status:'ok', isNew:true, lat:45.5232, lng:-122.6044,
     gradient:'linear-gradient(135deg, #2d1b69 0%, #11998e 100%)',
     rows:[{l:'Natural light',v:'Skylight + large windows',d:'g'},{l:'Kitchen',v:'Corian counters · gas · dishwasher',d:'g'},{l:'In-unit W/D',v:'Full-size upstairs',d:'g'},{l:'2BR',v:'Yes + 2.5 baths',d:'g'},{l:'Seismic',v:'Built 2022 · current code',d:'g'},{l:'Heating',v:'Integrated HVAC',d:'g'},{l:'Pets',v:'2 small dogs/cats ($50/mo)',d:'y'},{l:'Parking',v:'Bike storage · no car parking',d:'y'}],
     flags:[{t:'No availability yet — ask for June',c:'fa'},{t:'Above $2k budget',c:'fa'}],
     link:'https://www.apartments.com/homma-haus-mount-tabor-smart-home-portland-or/stf0wj6/', note:'Built by Green Hammer (sustainable builders). Near Mt Tabor Park, food carts. Up to 8 weeks free. Currently waitlisted — call for June.' },
-  { id:'aoe', name:'Atomic Orchard Experiment', addr:'2510 NE Sandy Blvd · Kerns', price:'$1,805–$1,999', pn:'1BR · utilities separate', type:'apartment', beds:'1BR', score:72, status:'ok', isNew:false,
+  { id:'aoe', name:'Atomic Orchard Experiment', addr:'2510 NE Sandy Blvd · Kerns', price:'$1,805–$1,999', pn:'1BR · utilities separate', type:'apartment', beds:'1BR', score:72, status:'ok', isNew:false, lat:45.5317, lng:-122.6388,
     gradient:'linear-gradient(135deg, #f093fb 0%, #f5576c 50%, #fda085 100%)',
     rows:[{l:'Natural light',v:'Floor-to-ceiling windows',d:'g'},{l:'Kitchen',v:'Quartz counters · dishwasher',d:'g'},{l:'In-unit W/D',v:'Full-size front-load',d:'g'},{l:'Flooring',v:'Wood laminate + concrete',d:'y'},{l:'2BR',v:'1BR only currently',d:'r'},{l:'Seismic',v:'New build 2025',d:'g'},{l:'Pets',v:'Dogs + cats ($300 dep)',d:'g'}],
     flags:[{t:"Exposed concrete floors (both: Don't Want)",c:'fr'}],
     link:'https://www.apartments.com/atomic-orchard-experiment-portland-or/9bwstf4/', note:'Striking loft in Kerns. Verify the concrete floors — shared dealbreaker. Ask if 2BR is coming.' },
-  { id:'waldorf', name:'Waldorf Apartments', addr:'833 NE Schuyler St · Irvington', price:'Call for price', pn:'KBC Mgmt · +$105/mo utilities', type:'apartment', beds:'2BR', score:68, status:'ok', isNew:false,
+  { id:'waldorf', name:'Waldorf Apartments', addr:'833 NE Schuyler St · Irvington', price:'Call for price', pn:'KBC Mgmt · +$105/mo utilities', type:'apartment', beds:'2BR', score:68, status:'ok', isNew:false, lat:45.5381, lng:-122.6471,
     gradient:'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
     rows:[{l:'Kitchen',v:'Retro checkered + built-ins',d:'y'},{l:'In-unit W/D',v:'Not listed — confirm',d:'y'},{l:'Flooring',v:'Hardwood',d:'g'},{l:'2BR',v:'Yes',d:'g'},{l:'Heating / AC',v:'AC confirmed',d:'g'},{l:'Pets',v:'Dogs + cats ($250 dep)',d:'g'}],
     flags:[{t:'Price unknown — call 503-287-6876',c:'fa'}],
     link:'https://www.kbcmgmt.com/listings/detail/48b2cfd2-1cd4-45e3-a72a-f1da1f97032f', note:'Best vintage 2BR character on the list. Near NE Broadway. Confirm laundry and price first.' },
-  { id:'parkview', name:'Parkview Apartments', addr:"1640 NE Irving St · Sullivan's Gulch", price:'From $1,495', pn:'2BR 950 sqft · National Historic Registry · 1941', type:'apartment', beds:'2BR', score:64, status:'ok', isNew:true,
+  { id:'parkview', name:'Parkview Apartments', addr:"1640 NE Irving St · Sullivan's Gulch", price:'From $1,495', pn:'2BR 950 sqft · National Historic Registry · 1941', type:'apartment', beds:'2BR', score:64, status:'ok', isNew:true, lat:45.5289, lng:-122.6567,
     gradient:'linear-gradient(135deg, #4ecdc4 0%, #44a08d 50%, #093637 100%)',
     rows:[{l:'Natural light',v:'Picture windows · tons of light',d:'g'},{l:'Kitchen',v:'Unknown — ask',d:'y'},{l:'In-unit W/D',v:'No — basement shared',d:'r'},{l:'Flooring',v:'Beautiful hardwood',d:'g'},{l:'2BR',v:'Yes · 950 sqft',d:'g'},{l:'Heating',v:'Steam heat (vintage)',d:'y'},{l:'Storage',v:'5×7 basement unit included',d:'g'},{l:'Courtyard',v:'5-acre garden courtyard',d:'g'}],
     flags:[{t:'No in-unit laundry (basement shared)',c:'fr'},{t:'Steam heat — ask about drafts',c:'fa'}],
     link:'https://www.apartments.com/parkview-apartments-portland-or/sb2rbt6/', note:'Gorgeous historic property with garden courtyard and hardwood floors. Best-priced 2BR on the list. Shared laundry is the main drawback.' },
-  { id:'kailash', name:'Kailash Ecovillage', addr:'SE Portland · Creston-Kenilworth', price:'Waitlist', pn:'1–2BR · rental model', type:'cohousing', beds:'1–2BR', score:62, status:'ok', isNew:true,
+  { id:'kailash', name:'Kailash Ecovillage', addr:'SE Portland · Creston-Kenilworth', price:'Waitlist', pn:'1–2BR · rental model', type:'cohousing', beds:'1–2BR', score:62, status:'ok', isNew:true, lat:45.493, lng:-122.63,
     gradient:'linear-gradient(135deg, #56ab2f 0%, #a8e063 100%)',
     rows:[{l:'Community',v:'Solar intentional community',d:'g'},{l:'Shared spaces',v:'Community room · treehouse · gardens',d:'g'},{l:'In-unit W/D',v:'Building laundry room',d:'y'},{l:'2BR',v:'Some units available',d:'y'},{l:'Eco values',v:'Solar · composting · car share',d:'g'},{l:'Location',v:'SE Portland inner city',d:'g'}],
     flags:[{t:'Waitlist — contact ASAP for June',c:'fa'},{t:'No guaranteed availability',c:'fa'}],
     link:'https://www.kailashecovillage.org/housing', note:'Best cohousing fit for science/left/creative values. Rental model — no ownership needed. Contact immediately at kailashecovillage.org/contact.' },
-  { id:'belmont', name:'2121 Belmont', addr:'2121 SE Belmont St · Buckman', price:'From $1,977', pn:'2BR ~$2,500–$3,600', type:'apartment', beds:'1–2BR', score:61, status:'ok', isNew:false,
+  { id:'belmont', name:'2121 Belmont', addr:'2121 SE Belmont St · Buckman', price:'From $1,977', pn:'2BR ~$2,500–$3,600', type:'apartment', beds:'1–2BR', score:61, status:'ok', isNew:false, lat:45.5162, lng:-122.643,
     gradient:'linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%)',
     rows:[{l:'Natural light',v:'Open-concept, glowing',d:'g'},{l:'Kitchen',v:'Condo-grade finishes',d:'g'},{l:'In-unit W/D',v:'Likely (condo build)',d:'y'},{l:'2BR',v:'Available (pricey)',d:'y'},{l:'Seismic',v:'Built 2008',d:'g'},{l:'Parking',v:'Underground garage',d:'g'}],
     flags:[{t:'Up to 6 weeks free running now',c:'fb'}],
     link:'https://www.2121belmontapts.com/', note:'Condo-grade Buckman build. Use the free weeks to offset 2BR cost.' },
-  { id:'yamhill', name:'2026 SE Yamhill St Unit A', addr:'SE Yamhill · Buckman', price:'~$2,199 est', pn:'2BR/1BA · 1,210 sqft · Zillow est', type:'apartment', beds:'2BR', score:58, status:'ok', isNew:true,
+  { id:'yamhill', name:'2026 SE Yamhill St Unit A', addr:'SE Yamhill · Buckman', price:'~$2,199 est', pn:'2BR/1BA · 1,210 sqft · Zillow est', type:'apartment', beds:'2BR', score:58, status:'ok', isNew:true, lat:45.5126, lng:-122.6454,
     gradient:'linear-gradient(135deg, #c94b4b 0%, #4b134f 100%)',
     rows:[{l:'Natural light',v:'Big front window',d:'g'},{l:'Kitchen',v:'Gas range · dishwasher',d:'g'},{l:'In-unit W/D',v:'Not included',d:'r'},{l:'2BR',v:'Yes + attached garage',d:'g'},{l:'Utilities',v:'Water/sewer/garbage incl',d:'g'}],
     flags:[{t:'Not confirmed available — verify',c:'fa'},{t:"Linoleum floors (shared Don't Want)",c:'fr'}],
     link:'https://www.zillow.com/homedetails/2026-SE-Yamhill-St-APT-A-Portland-OR-97214/2069064308_zpid/', note:'Zillow historical listing — not confirmed live. Buckman, attached garage great for camping gear.' },
-  { id:'alberta', name:'Intentional Community — Alberta Arts', addr:'Alberta Arts / Sabin · NE Portland', price:'$825/mo', pn:'Room in shared house · Craigslist', type:'cohousing', beds:'Room share', score:55, status:'ok', isNew:true,
+  { id:'alberta', name:'Intentional Community — Alberta Arts', addr:'Alberta Arts / Sabin · NE Portland', price:'$825/mo', pn:'Room in shared house · Craigslist', type:'cohousing', beds:'Room share', score:55, status:'ok', isNew:true, lat:45.56, lng:-122.649,
     gradient:'linear-gradient(135deg, #f7971e 0%, #ffd200 100%)',
     rows:[{l:'Community',v:'Intentional community listing',d:'g'},{l:'Location',v:'Alberta Arts — very cool area',d:'g'},{l:'Price',v:'$825/mo — very affordable',d:'g'},{l:'Private space',v:'Single room, shared home',d:'y'},{l:'2BR',v:'No — shared household',d:'r'}],
     flags:[{t:'Room share only',c:'fb'},{t:'CL listing — check soon',c:'fa'}],
     link:'https://portland.craigslist.org/search/roo', note:'Search "intentional community Alberta" in PDX Craigslist rooms & shares. Great short-term landing spot.' },
-  { id:'cascadia', name:'Cascadia Commons', addr:'SW Portland · Raleigh Hills (97225)', price:'$1,800/mo', pn:'1BR 675 sqft · water/sewer/HOA incl', type:'cohousing', beds:'1BR', score:58, status:'ok', isNew:true,
+  { id:'cascadia', name:'Cascadia Commons', addr:'SW Portland · Raleigh Hills (97225)', price:'$1,800/mo', pn:'1BR 675 sqft · water/sewer/HOA incl', type:'cohousing', beds:'1BR', score:58, status:'ok', isNew:true, lat:45.4896, lng:-122.78,
     gradient:'linear-gradient(135deg, #1d976c 0%, #93f9b9 100%)',
     rows:[{l:'Natural light',v:"Vaulted 12' ceilings",d:'g'},{l:'In-unit W/D',v:'Yes',d:'g'},{l:'2BR',v:'1BR only available',d:'r'},{l:'Community',v:'26 households since 1999',d:'g'},{l:'Shared spaces',v:'Dining hall · workshop · gardens',d:'g'}],
     flags:[{t:'SW Portland — less inner-city vibe',c:'fa'},{t:'Monthly work parties required',c:'fb'}],
     link:'https://cascadiacommons.com/units-for-sale-or-rent/', note:'Available now at $1,800/mo all-in. Contact: JwhateverG@gmail.com · 503-512-0662' },
-  { id:'silver', name:'Silver Court (KBC)', addr:'2170 NE Hancock St · Irvington', price:'Call for price', pn:'+$85/mo utilities', type:'apartment', beds:'1BR', score:52, status:'ok', isNew:false,
+  { id:'silver', name:'Silver Court (KBC)', addr:'2170 NE Hancock St · Irvington', price:'Call for price', pn:'+$85/mo utilities', type:'apartment', beds:'1BR', score:52, status:'ok', isNew:false, lat:45.5381, lng:-122.6432,
     gradient:'linear-gradient(135deg, #8e9eab 0%, #eef2f3 100%)',
     rows:[{l:'Flooring',v:'Hardwood',d:'g'},{l:'2BR',v:'1BR only',d:'r'},{l:'Pets',v:'Cats only — no dogs',d:'r'}],
     flags:[{t:'No dogs',c:'fr'},{t:'1BR only',c:'fr'}],
     link:'https://www.kbcmgmt.com/listings/detail/2168d557-94a3-42bc-8f1b-c28146d586aa', note:'Elegant 1920s Irvington. Cats-only and 1BR are likely dealbreakers.' },
-  { id:'granada', name:'Granada Court (Bristol Urban)', addr:'932 NE Pacific St · Hollywood/Kerns', price:'Call for price', pn:'+$95/mo utilities', type:'apartment', beds:'Unknown', score:48, status:'ok', isNew:false,
+  { id:'granada', name:'Granada Court (Bristol Urban)', addr:'932 NE Pacific St · Hollywood/Kerns', price:'Call for price', pn:'+$95/mo utilities', type:'apartment', beds:'Unknown', score:48, status:'ok', isNew:false, lat:45.531, lng:-122.652,
     gradient:'linear-gradient(135deg, #e96c0e 0%, #f5d020 100%)',
     rows:[{l:'In-unit W/D',v:'Building shared only',d:'r'},{l:'Seismic',v:'1926 — ask about retrofit',d:'y'},{l:'Pets',v:'Dogs + cats, no pet rent',d:'g'}],
     flags:[{t:'No in-unit laundry',c:'fr'},{t:'1926 building',c:'fa'}],
     link:'https://www.bristolurban.com/listings/detail/bf220ceb-8085-4a54-8c85-47508f50ec10', note:'Charming courtyard. No in-unit laundry is a high-priority miss. Lower priority.' },
-  { id:'east12', name:'East 12 Lofts', addr:'1100 SE 12th Ave · Buckman', price:'From $1,195', pn:'Studio/1BR · 380–445 sqft · built 2014', type:'apartment', beds:'Studio/1BR', score:63, status:'ok', isNew:true,
+  { id:'east12', name:'East 12 Lofts', addr:'1100 SE 12th Ave · Buckman', price:'From $1,195', pn:'Studio/1BR · 380–445 sqft · built 2014', type:'apartment', beds:'Studio/1BR', score:63, status:'ok', isNew:true, lat:45.5159, lng:-122.6583,
     gradient:'linear-gradient(135deg, #373B44 0%, #4286f4 100%)',
     rows:[{l:'Natural light',v:'Oversized windows · city views',d:'g'},{l:'Kitchen',v:'Quartz counters · stainless steel',d:'g'},{l:'In-unit W/D',v:'Stacked in-unit',d:'g'},{l:'2BR',v:'No — studio/1BR only',d:'r'},{l:'Flooring',v:'Unknown — ask',d:'y'},{l:'Seismic',v:'Built 2014',d:'g'},{l:'Pets',v:'Dogs + cats (100lb max, $250 dep)',d:'g'},{l:'Amenities',v:'Rooftop deck · fitness · bike room',d:'g'},{l:'Walk / Bike',v:'Walk 96 · very bikeable',d:'g'}],
     flags:[{t:'Studio/1BR only — no 2BR',c:'fr'},{t:'1 month free on select units',c:'fb'}],
     link:'https://www.liveeast12.com/', note:'Buckman location is excellent — steps from food carts, cafes, Hawthorne bridge. Units are small (380–445 sqft) but well finished.' },
-  { id:'cookstreet', name:'Cook Street', addr:'107 N Cook St · Williams District', price:'From $1,335', pn:'Studio–2BR · 490–983 sqft · built 2016', type:'apartment', beds:'2BR', score:71, status:'ok', isNew:true,
+  { id:'cookstreet', name:'Cook Street', addr:'107 N Cook St · Williams District', price:'From $1,335', pn:'Studio–2BR · 490–983 sqft · built 2016', type:'apartment', beds:'2BR', score:71, status:'ok', isNew:true, lat:45.545, lng:-122.67,
     gradient:'linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)',
     rows:[{l:'Natural light',v:'Picture windows · city views',d:'g'},{l:'Kitchen',v:'Luxury finishes — confirm details',d:'y'},{l:'In-unit W/D',v:'Confirm — not listed explicitly',d:'y'},{l:'2BR',v:'Available · up to 983 sqft',d:'g'},{l:'Eco-friendly',v:'Natural NW materials · green build',d:'g'},{l:'Seismic',v:'Built 2016',d:'g'},{l:'Pets',v:'Dogs + cats (no weight limit!)',d:'g'},{l:'Walk / Bike',v:'Walk 94 · near Mississippi/Alberta',d:'g'}],
     flags:[{t:'Confirm in-unit W/D before touring',c:'fa'}],
     link:'https://cookstreetportland.com/', note:'Williams District — one block from Mississippi Ave, close to Alberta Arts. Picture windows, eco-build, no pet weight limit (rare). Strong 2BR option.' },
-  { id:'fortyone11', name:'Forty One 11', addr:'4111 NE MLK Blvd · Alberta/King', price:'From $1,199', pn:'Studio–2BR · 394–931 sqft · built 2019', type:'apartment', beds:'2BR', score:62, status:'ok', isNew:true,
+  { id:'fortyone11', name:'Forty One 11', addr:'4111 NE MLK Blvd · Alberta/King', price:'From $1,199', pn:'Studio–2BR · 394–931 sqft · built 2019', type:'apartment', beds:'2BR', score:62, status:'ok', isNew:true, lat:45.556, lng:-122.664,
     gradient:'linear-gradient(135deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%)',
     rows:[{l:'Natural light',v:'Unknown — ask',d:'y'},{l:'Kitchen',v:'Unknown — ask',d:'y'},{l:'In-unit W/D',v:'Unknown — ask',d:'y'},{l:'2BR',v:'Available · up to 931 sqft',d:'g'},{l:'Area',v:'Alberta Arts / King neighborhood',d:'g'},{l:'Seismic',v:'Built 2019',d:'g'},{l:'Pets',v:'Unknown — ask',d:'y'},{l:'Price',v:'Very affordable for 2BR',d:'g'}],
     flags:[{t:'Many details unknown — call to confirm',c:'fa'}],
     link:'https://www.fortyone11pdx.com/', note:'Alberta Arts / King neighborhood — one of the coolest areas on your list. Very competitive price for 2BR. Worth a call.' },
-  { id:'kingstreet', name:'King Street Lofts', addr:'405 NE Mason St · Alberta/King', price:'From $1,075', pn:'1BR · 556–667 sqft · in-unit W/D', type:'apartment', beds:'1BR', score:57, status:'ok', isNew:true,
+  { id:'kingstreet', name:'King Street Lofts', addr:'405 NE Mason St · Alberta/King', price:'From $1,075', pn:'1BR · 556–667 sqft · in-unit W/D', type:'apartment', beds:'1BR', score:57, status:'ok', isNew:true, lat:45.5562, lng:-122.6606,
     gradient:'linear-gradient(135deg, #134e5e 0%, #71b280 100%)',
     rows:[{l:'Natural light',v:'Unknown — ask',d:'y'},{l:'Kitchen',v:'Unknown — ask',d:'y'},{l:'In-unit W/D',v:'Yes — confirmed',d:'g'},{l:'2BR',v:'Primarily 1BR',d:'r'},{l:'Area',v:'Alberta Arts — very cool',d:'g'},{l:'Price',v:'Very affordable',d:'g'},{l:'Pets',v:'Unknown — ask',d:'y'}],
     flags:[{t:'Primarily 1BR units',c:'fr'},{t:'Best price on the list',c:'fb'}],
@@ -112,6 +113,7 @@ const LMAP = Object.fromEntries(LISTINGS.map(l => [l.id, l]))
 
 const FILTERS = [
   { key:'all', label:'All' },
+  { key:'map', label:'🗺 Map' },
   { key:'apartment', label:'Apartments' },
   { key:'cohousing', label:'Cohousing' },
   { key:'2br', label:'Has 2BR' },
@@ -392,7 +394,136 @@ function Badge({ label, color, text }: { label:string; color:string; text:string
   )
 }
 
-function KanbanGroup({ label, sublabel, empty, accentColor, children }: {
+// ── Map View ──────────────────────────────────────────────────────────────────
+function MapView({ listings, favorites, archived, topPickId, notes }: {
+  listings: Listing[]; favorites: string[]; archived: string[]; topPickId: string | null; notes: Record<string,string>
+}) {
+  const mapRef = useRef<HTMLDivElement>(null)
+  const leafletMap = useRef<any>(null)
+
+  useEffect(() => {
+    if (!mapRef.current || leafletMap.current) return
+
+    // Inject Leaflet CSS
+    if (!document.getElementById('leaflet-css')) {
+      const link = document.createElement('link')
+      link.id = 'leaflet-css'
+      link.rel = 'stylesheet'
+      link.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'
+      document.head.appendChild(link)
+    }
+
+    // Load Leaflet JS dynamically
+    const script = document.createElement('script')
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js'
+    script.onload = () => initMap()
+    document.head.appendChild(script)
+
+    return () => { if (leafletMap.current) { leafletMap.current.remove(); leafletMap.current = null } }
+  }, [])
+
+  // Re-render markers when state changes
+  useEffect(() => {
+    if (leafletMap.current) renderMarkers()
+  }, [favorites, archived, topPickId])
+
+  function initMap() {
+    const L = (window as any).L
+    if (!mapRef.current) return
+    const map = L.map(mapRef.current, { zoomControl: true }).setView([45.528, -122.654], 13)
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '© OpenStreetMap contributors © CARTO',
+      maxZoom: 19,
+    }).addTo(map)
+    leafletMap.current = map
+    renderMarkers()
+  }
+
+  function renderMarkers() {
+    const L = (window as any).L
+    const map = leafletMap.current
+    if (!L || !map) return
+
+    // Clear existing markers
+    map.eachLayer((layer: any) => { if (layer.options?.isAptMarker) map.removeLayer(layer) })
+
+    listings.filter(l => !archived.includes(l.id)).forEach(l => {
+      const isFav = favorites.includes(l.id)
+      const isTop = l.id === topPickId
+      const hasNote = !!(notes[l.id]?.trim())
+
+      const color = isTop ? '#16a34a' : isFav ? '#eab308' : hasNote ? '#d97706' : '#6b7280'
+      const size = isTop ? 18 : isFav ? 15 : 12
+      const ring = isFav ? `box-shadow: 0 0 0 3px ${color}40, 0 2px 8px rgba(0,0,0,0.25);` : 'box-shadow: 0 1px 4px rgba(0,0,0,0.3);'
+      const label = isTop ? '★' : isFav ? '♥' : ''
+
+      const icon = L.divIcon({
+        html: `<div style="
+          width:${size * 2}px; height:${size * 2}px; border-radius:50%;
+          background:${color}; border: 2.5px solid white;
+          display:flex; align-items:center; justify-content:center;
+          font-size:${size * 0.7}px; color:white; font-weight:700;
+          ${ring} cursor:pointer; transition:transform 0.15s;
+        ">${label}</div>`,
+        className: '',
+        iconSize: [size * 2, size * 2],
+        iconAnchor: [size, size],
+        popupAnchor: [0, -size - 4],
+      })
+
+      const popupContent = `
+        <div style="font-family: 'Helvetica Neue', sans-serif; min-width: 200px; max-width: 260px;">
+          <div style="font-size:13px; font-weight:600; color:#111827; margin-bottom:3px;">${l.name}</div>
+          <div style="font-size:11px; color:#9ca3af; margin-bottom:8px;">${l.addr}</div>
+          <div style="font-size:14px; color:#111827; font-weight:500; margin-bottom:6px;">${l.price}</div>
+          ${isFav ? `<div style="font-size:10px; background:#fefce8; color:#a16207; padding:2px 8px; border-radius:99px; display:inline-block; margin-bottom:6px;">★ Favorited</div>` : ''}
+          ${isTop ? `<div style="font-size:10px; background:#dcfce7; color:#15803d; padding:2px 8px; border-radius:99px; display:inline-block; margin-bottom:6px;">★ Top pick</div>` : ''}
+          ${notes[l.id] ? `<div style="font-size:11px; color:#7c3aed; margin-bottom:6px;">✏ ${notes[l.id].slice(0, 80)}${notes[l.id].length > 80 ? '…' : ''}</div>` : ''}
+          <a href="${l.link}" target="_blank" style="font-size:11px; color:#16a34a; text-decoration:none; font-family:monospace;">View listing →</a>
+        </div>
+      `
+
+      const marker = L.marker([l.lat, l.lng], { icon, isAptMarker: true }).addTo(map)
+      marker.bindPopup(popupContent, { maxWidth: 280, className: 'apt-popup' })
+    })
+  }
+
+  const visibleCount = listings.filter(l => !archived.includes(l.id)).length
+  const favCount = listings.filter(l => favorites.includes(l.id) && !archived.includes(l.id)).length
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', height:'calc(100vh - 120px)', minHeight:500 }}>
+      {/* Legend */}
+      <div style={{ padding:'10px 28px', background:'#fff', borderBottom:'1px solid #e5e7eb', display:'flex', gap:20, alignItems:'center', flexWrap:'wrap' }}>
+        {[
+          { color:'#16a34a', label:'Top pick (★)', size:18 },
+          { color:'#eab308', label:'Favorited (♥)', size:15 },
+          { color:'#d97706', label:'Has notes', size:12 },
+          { color:'#6b7280', label:'New / considering', size:12 },
+        ].map(item => (
+          <div key={item.label} style={{ display:'flex', alignItems:'center', gap:7 }}>
+            <div style={{ width:item.size, height:item.size, borderRadius:'50%', background:item.color, border:'2px solid white', boxShadow:'0 1px 4px rgba(0,0,0,0.2)', flexShrink:0 }} />
+            <span style={{ fontFamily:'monospace', fontSize:11, color:'#6b7280' }}>{item.label}</span>
+          </div>
+        ))}
+        <span style={{ marginLeft:'auto', fontFamily:'monospace', fontSize:11, color:'#9ca3af' }}>
+          {visibleCount} shown · {favCount} favorited
+        </span>
+      </div>
+
+      {/* Map container */}
+      <div ref={mapRef} style={{ flex:1 }} />
+
+      <style>{`
+        .apt-popup .leaflet-popup-content-wrapper { border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); padding: 0; }
+        .apt-popup .leaflet-popup-content { margin: 14px 16px; }
+        .apt-popup .leaflet-popup-tip-container { margin-top: -1px; }
+      `}</style>
+    </div>
+  )
+}
+
+// ── Kanban group ──────────────────────────────────────────────────────────────
   label: string; sublabel: string; empty: string; accentColor: string; children: React.ReactNode[]
 }) {
   const hasChildren = children.length > 0
@@ -503,6 +634,7 @@ export default function ApartmentsPage() {
   const isArchiveView = filter === 'archived'
   const isFavView = filter === 'favorites'
   const isAllView = filter === 'all'
+  const isMapView = filter === 'map'
   const topPickId = favOrder[0] || null
 
   // Kanban groups (only used in All view)
@@ -514,7 +646,7 @@ export default function ApartmentsPage() {
   const visibleListings = (() => {
     if (isArchiveView) return LISTINGS.filter(l => archived.includes(l.id))
     if (isFavView) return favOrder.map(id => LMAP[id]).filter(l => l && !archived.includes(l.id))
-    if (isAllView) return [] // handled separately as kanban groups
+    if (isAllView || isMapView) return [] // handled separately
     return LISTINGS.filter(l => {
       if (archived.includes(l.id)) return false
       if (filter === 'apartment') return l.type === 'apartment'
@@ -526,7 +658,7 @@ export default function ApartmentsPage() {
     })
   })()
 
-  const allForStats = isAllView
+  const allForStats = (isAllView || isMapView)
     ? [...kanbanFavorited, ...kanbanConsidering, ...kanbanNew]
     : isArchiveView ? LISTINGS.filter(l => archived.includes(l.id)) : visibleListings
   const scored = allForStats.filter(l => l.score > 0)
@@ -622,6 +754,17 @@ export default function ApartmentsPage() {
         <div style={{ padding:'8px 28px 0', fontFamily:'monospace', fontSize:10, color:'#b91c1c', textTransform:'uppercase', letterSpacing:'0.1em' }}>
           Ruled out — click ↺ Unarchive on any card to restore it
         </div>
+      )}
+
+      {/* ── MAP VIEW ── */}
+      {isMapView && (
+        <MapView
+          listings={LISTINGS}
+          favorites={state.favorites}
+          archived={archived}
+          topPickId={topPickId}
+          notes={state.notes}
+        />
       )}
 
       {/* ── KANBAN (All view) ── */}
