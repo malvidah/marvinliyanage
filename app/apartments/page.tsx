@@ -524,6 +524,7 @@ function MapView({ listings, favorites, archived, topPickId, notes }: {
 }
 
 // ── Kanban group ──────────────────────────────────────────────────────────────
+function KanbanGroup({ label, sublabel, empty, accentColor, children }: {
   label: string; sublabel: string; empty: string; accentColor: string; children: React.ReactNode[]
 }) {
   const hasChildren = children.length > 0
