@@ -392,6 +392,31 @@ function Badge({ label, color, text }: { label:string; color:string; text:string
   )
 }
 
+function KanbanGroup({ label, sublabel, empty, accentColor, children }: {
+  label: string; sublabel: string; empty: string; accentColor: string; children: React.ReactNode[]
+}) {
+  const hasChildren = children.length > 0
+  return (
+    <div>
+      <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
+        <div style={{ width:3, height:18, borderRadius:99, background:accentColor, flexShrink:0 }} />
+        <span style={{ fontFamily:'Georgia,serif', fontSize:18, fontWeight:600, color:'#111827' }}>{label}</span>
+        <span style={{ fontFamily:'monospace', fontSize:10, color:'#9ca3af', letterSpacing:'0.08em' }}>{sublabel}</span>
+        <div style={{ flex:1, height:1, background:'#e5e7eb' }} />
+      </div>
+      {!hasChildren ? (
+        <div style={{ fontFamily:'Georgia,serif', fontSize:15, fontStyle:'italic', color:'#d1d5db', padding:'20px 0' }}>
+          {empty}
+        </div>
+      ) : (
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(296px, 1fr))', gap:16 }}>
+          {children}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function ApartmentsPage() {
   const [filter, setFilter] = useState('all')
@@ -482,7 +507,9 @@ export default function ApartmentsPage() {
 
   // Kanban groups (only used in All view)
   const kanbanFavorited = favOrder.map(id => LMAP[id]).filter(l => l && !archived.includes(l.id))
-  const kanbanNew = LISTINGS.filter(l => !archived.includes(l.id) && !favOrder.includes(l.id))
+  const unfavorited = LISTINGS.filter(l => !archived.includes(l.id) && !favOrder.includes(l.id))
+  const kanbanConsidering = unfavorited.filter(l => !!(state.notes[l.id]?.trim()))
+  const kanbanNew = unfavorited.filter(l => !state.notes[l.id]?.trim())
 
   const visibleListings = (() => {
     if (isArchiveView) return LISTINGS.filter(l => archived.includes(l.id))
@@ -500,7 +527,7 @@ export default function ApartmentsPage() {
   })()
 
   const allForStats = isAllView
-    ? [...kanbanFavorited, ...kanbanNew]
+    ? [...kanbanFavorited, ...kanbanConsidering, ...kanbanNew]
     : isArchiveView ? LISTINGS.filter(l => archived.includes(l.id)) : visibleListings
   const scored = allForStats.filter(l => l.score > 0)
   const avgScore = scored.length ? Math.round(scored.reduce((a,b)=>a+b.score,0)/scored.length) : 0
@@ -599,42 +626,38 @@ export default function ApartmentsPage() {
 
       {/* ── KANBAN (All view) ── */}
       {isAllView && (
-        <div style={{ padding:'24px 28px 60px', display:'flex', flexDirection:'column', gap:40 }}>
-          {/* Favorited group */}
-          <div>
-            <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
-              <span style={{ fontFamily:'Georgia,serif', fontSize:18, fontWeight:600, color:'#111827' }}>Favorited</span>
-              <span style={{ fontFamily:'monospace', fontSize:10, color:'#9ca3af', letterSpacing:'0.08em' }}>{kanbanFavorited.length} · drag to reorder</span>
-              <div style={{ flex:1, height:1, background:'#e5e7eb', marginLeft:4 }} />
-            </div>
-            {kanbanFavorited.length === 0 ? (
-              <div style={{ fontFamily:'Georgia,serif', fontSize:15, fontStyle:'italic', color:'#d1d5db', padding:'24px 0' }}>
-                Star a listing to add it here
-              </div>
-            ) : (
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(296px, 1fr))', gap:16 }}>
-                {kanbanFavorited.map((l, i) => renderCard(l, i, true, true))}
-              </div>
-            )}
-          </div>
+        <div style={{ padding:'24px 28px 60px', display:'flex', flexDirection:'column', gap:48 }}>
 
-          {/* New / considering group */}
-          <div>
-            <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
-              <span style={{ fontFamily:'Georgia,serif', fontSize:18, fontWeight:600, color:'#111827' }}>Considering</span>
-              <span style={{ fontFamily:'monospace', fontSize:10, color:'#9ca3af', letterSpacing:'0.08em' }}>{kanbanNew.length} listings</span>
-              <div style={{ flex:1, height:1, background:'#e5e7eb', marginLeft:4 }} />
-            </div>
-            {kanbanNew.length === 0 ? (
-              <div style={{ fontFamily:'Georgia,serif', fontSize:15, fontStyle:'italic', color:'#d1d5db', padding:'24px 0' }}>
-                All listings are favorited or archived
-              </div>
-            ) : (
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(296px, 1fr))', gap:16 }}>
-                {kanbanNew.map((l, i) => renderCard(l, i, false, false))}
-              </div>
-            )}
-          </div>
+          {/* Favorited */}
+          <KanbanGroup
+            label="Favorited"
+            sublabel={`${kanbanFavorited.length} · drag to reorder`}
+            empty="Star a listing to add it here"
+            accentColor="#16a34a"
+          >
+            {kanbanFavorited.map((l, i) => renderCard(l, i, true, true))}
+          </KanbanGroup>
+
+          {/* Considering */}
+          <KanbanGroup
+            label="Considering"
+            sublabel={`${kanbanConsidering.length} listings with notes`}
+            empty="Listings you've left notes on will appear here"
+            accentColor="#d97706"
+          >
+            {kanbanConsidering.map((l, i) => renderCard(l, i, false, false))}
+          </KanbanGroup>
+
+          {/* New */}
+          <KanbanGroup
+            label="New"
+            sublabel={`${kanbanNew.length} not yet reviewed`}
+            empty="Nothing new — you've looked at everything!"
+            accentColor="#9ca3af"
+          >
+            {kanbanNew.map((l, i) => renderCard(l, i, false, false))}
+          </KanbanGroup>
+
         </div>
       )}
 
