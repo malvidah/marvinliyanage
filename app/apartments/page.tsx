@@ -74,6 +74,22 @@ const LISTINGS: Listing[] = [
     rows:[{l:'In-unit W/D',v:'Building shared only',d:'r'},{l:'Seismic',v:'1926 — ask about retrofit',d:'y'},{l:'Pets',v:'Dogs + cats, no pet rent',d:'g'}],
     flags:[{t:'No in-unit laundry',c:'fr'},{t:'1926 building',c:'fa'}],
     link:'https://www.bristolurban.com/listings/detail/bf220ceb-8085-4a54-8c85-47508f50ec10', note:'Charming courtyard. No in-unit laundry is a high-priority miss. Lower priority.' },
+  { id:'east12', name:'East 12 Lofts', addr:'1100 SE 12th Ave · Buckman', price:'From $1,195', pn:'Studio/1BR · 380–445 sqft · built 2014', type:'apartment', beds:'Studio/1BR', score:63, status:'ok', isNew:true,
+    rows:[{l:'Natural light',v:'Oversized windows · city views',d:'g'},{l:'Kitchen',v:'Quartz counters · stainless steel',d:'g'},{l:'In-unit W/D',v:'Stacked in-unit',d:'g'},{l:'2BR',v:'No — studio/1BR only',d:'r'},{l:'Flooring',v:'Unknown — ask',d:'y'},{l:'Seismic',v:'Built 2014',d:'g'},{l:'Pets',v:'Dogs + cats (100lb max, $250 dep)',d:'g'},{l:'Amenities',v:'Rooftop deck · fitness · bike room',d:'g'},{l:'Walk / Bike',v:'Walk 96 · very bikeable',d:'g'}],
+    flags:[{t:'Studio/1BR only — no 2BR',c:'fr'},{t:'1 month free on select units',c:'fb'}],
+    link:'https://www.liveeast12.com/', note:'Buckman location is excellent — steps from food carts, cafes, Hawthorne bridge. Units are small (380–445 sqft) but well finished. Strong choice if 2BR becomes less of a priority.' },
+  { id:'cookstreet', name:'Cook Street', addr:'107 N Cook St · Williams District', price:'From $1,335', pn:'Studio–2BR · 490–983 sqft · built 2016', type:'apartment', beds:'2BR', score:71, status:'ok', isNew:true,
+    rows:[{l:'Natural light',v:'Picture windows · city views',d:'g'},{l:'Kitchen',v:'Luxury finishes — confirm details',d:'y'},{l:'In-unit W/D',v:'Confirm — not listed explicitly',d:'y'},{l:'2BR',v:'Available · up to 983 sqft',d:'g'},{l:'Eco-friendly',v:'Natural NW materials · green build',d:'g'},{l:'Seismic',v:'Built 2016',d:'g'},{l:'Pets',v:'Dogs + cats (no weight limit!)',d:'g'},{l:'Walk / Bike',v:'Walk 94 · near Mississippi/Alberta',d:'g'}],
+    flags:[{t:'Confirm in-unit W/D before touring',c:'fa'}],
+    link:'https://cookstreetportland.com/', note:'Williams District — one block from Mississippi Ave, close to Alberta Arts. Picture windows, eco-build, no pet weight limit (rare). Strong 2BR option worth a tour.' },
+  { id:'fortyone11', name:'Forty One 11', addr:'4111 NE MLK Blvd · Alberta/King', price:'From $1,199', pn:'Studio–2BR · 394–931 sqft · built 2019', type:'apartment', beds:'2BR', score:62, status:'ok', isNew:true,
+    rows:[{l:'Natural light',v:'Unknown — ask',d:'y'},{l:'Kitchen',v:'Unknown — ask',d:'y'},{l:'In-unit W/D',v:'Unknown — ask',d:'y'},{l:'2BR',v:'Available · up to 931 sqft',d:'g'},{l:'Area',v:'Alberta Arts / King neighborhood',d:'g'},{l:'Seismic',v:'Built 2019',d:'g'},{l:'Pets',v:'Unknown — ask',d:'y'},{l:'Price',v:'Very affordable for 2BR',d:'g'}],
+    flags:[{t:'Many details unknown — call to confirm',c:'fa'}],
+    link:'https://www.fortyone11pdx.com/', note:'Alberta Arts / King neighborhood — one of the coolest areas on your list. Very competitive price for 2BR. Big unknowns on finishes and W/D. Worth a call.' },
+  { id:'kingstreet', name:'King Street Lofts', addr:'405 NE Mason St · Alberta/King', price:'From $1,075', pn:'1BR · 556–667 sqft · in-unit W/D', type:'apartment', beds:'1BR', score:57, status:'ok', isNew:true,
+    rows:[{l:'Natural light',v:'Unknown — ask',d:'y'},{l:'Kitchen',v:'Unknown — ask',d:'y'},{l:'In-unit W/D',v:'Yes — confirmed',d:'g'},{l:'2BR',v:'Primarily 1BR',d:'r'},{l:'Area',v:'Alberta Arts — very cool',d:'g'},{l:'Price',v:'Very affordable',d:'g'},{l:'Pets',v:'Unknown — ask',d:'y'}],
+    flags:[{t:'Primarily 1BR units',c:'fr'},{t:'Best price on the list',c:'fb'}],
+    link:'https://www.apartments.com/king-street-lofts-portland-or/nj2bkkq/', note:'Alberta Arts area, excellent price. Mainly 1BR but worth confirming if any 2BR exist. Great fallback if budget tightens.' },
 ]
 
 const LMAP = Object.fromEntries(LISTINGS.map(l => [l.id, l]))
