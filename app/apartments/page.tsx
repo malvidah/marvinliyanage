@@ -107,6 +107,16 @@ const LISTINGS: Listing[] = [
     rows:[{l:'Natural light',v:'Unknown — ask',d:'y'},{l:'Kitchen',v:'Unknown — ask',d:'y'},{l:'In-unit W/D',v:'Yes — confirmed',d:'g'},{l:'2BR',v:'Primarily 1BR',d:'r'},{l:'Area',v:'Alberta Arts — very cool',d:'g'},{l:'Price',v:'Very affordable',d:'g'},{l:'Pets',v:'Unknown — ask',d:'y'}],
     flags:[{t:'Primarily 1BR units',c:'fr'},{t:'Best price on the list',c:'fb'}],
     link:'https://www.apartments.com/king-street-lofts-portland-or/nj2bkkq/', note:'Alberta Arts area, excellent price. Mainly 1BR but worth confirming if any 2BR exist.' },
+  { id:'moderabelmont', name:'Modera Belmont', addr:'685 SE Belmont St · Buckman', price:'From $1,480', pn:'Studio–2BR · 457–1,230 sqft · built 2018', type:'apartment', beds:'2BR', score:76, status:'ok', isNew:true, lat:45.5155, lng:-122.6500,
+    gradient:'linear-gradient(135deg, #ff6b6b 0%, #feca57 100%)',
+    rows:[{l:'Natural light',v:'Floor-to-ceiling windows throughout',d:'g'},{l:'Kitchen',v:'Quartz counters · eco-friendly floors',d:'g'},{l:'In-unit W/D',v:'Yes',d:'g'},{l:'2BR',v:'Available · up to 1,230 sqft',d:'g'},{l:'Rooftop',v:'Mt. Hood + river views',d:'g'},{l:'Seismic',v:'Built 2018',d:'g'},{l:'Pets',v:'Yes — pet spa on site',d:'g'},{l:'Amenities',v:'Gym · game room · VR room · firepit',d:'g'}],
+    flags:[{t:'Price drops seen recently — check current',c:'fb'}],
+    link:'https://www.moderabelmont.com/', note:'One of the strongest "big windows" options on the eastside. Floor-to-ceiling windows, rooftop with Mt. Hood views, Buckman neighborhood. Very well-reviewed management. 2BR up to 1,230 sqft.' },
+  { id:'belmontdairy', name:'Belmont Dairy Lofts', addr:'3342 SE Morrison St · Sunnyside', price:'From $1,258', pn:'1–2BR · 1,004–1,486 sqft · income-qualified', type:'apartment', beds:'2BR', score:48, status:'ok', isNew:true, lat:45.5180, lng:-122.6390,
+    gradient:'linear-gradient(135deg, #d4a373 0%, #a0522d 100%)',
+    rows:[{l:'Natural light',v:'22-ft ceilings · oversized skylights',d:'g'},{l:'Kitchen',v:'Stainless steel appliances',d:'y'},{l:'In-unit W/D',v:'No — on-site shared laundry',d:'r'},{l:'2BR',v:'Yes · 1,004–1,486 sqft',d:'g'},{l:'Flooring',v:'Hardwood',d:'g'},{l:'Seismic',v:'Historic conversion',d:'y'},{l:'Pets',v:'Dogs allowed (45lb max)',d:'y'}],
+    flags:[{t:'⚠ Income-qualified housing — must verify eligibility',c:'fr'},{t:'Mixed reviews — management complaints',c:'fr'},{t:'No in-unit laundry',c:'fr'}],
+    link:'https://www.belmontdairy.com/', note:'Stunning 22-foot ceilings and skylights in a converted dairy building. BUT: affordable housing with income caps — you must qualify. Also shared laundry only and management reviews are very mixed. Verify income eligibility before getting attached.' },
 ]
 
 const LMAP = Object.fromEntries(LISTINGS.map(l => [l.id, l]))
