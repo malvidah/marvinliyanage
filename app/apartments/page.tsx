@@ -132,6 +132,11 @@ const LISTINGS: Listing[] = [
     rows:[{l:'Layout',v:'15–20 split-level mezzanine units',d:'g'},{l:'Natural light',v:'Floor-to-ceiling windows · city views',d:'g'},{l:'Kitchen',v:'Quartz counters · stainless',d:'g'},{l:'In-unit W/D',v:'Confirm — not listed explicitly',d:'y'},{l:'2BR',v:'Yes · up to $2,853',d:'g'},{l:'Rooftop',v:'16th floor deck · fire pit · mountain views',d:'g'},{l:'Area',v:'Pearl District · streetcar at door',d:'g'},{l:'Pets',v:'Yes · 75lb max',d:'g'}],
     flags:[{t:'15–20 split-level units confirmed per Reddit',c:'fb'},{t:'Pearl District — higher price tier',c:'fa'},{t:'Confirm in-unit W/D before touring',c:'fa'}],
     link:'https://www.liveatasa.com/asa-flats-lofts-portland-or/', note:'Largest inventory of literal split-level loft units in Portland per the thread. Pearl District is more corporate-feeling than eastside but the building is well-appointed and the loft units are the real thing. Ask specifically for the mezzanine floor plans when you call.' },
+  { id:'buckmancourt', name:'Buckman Court', addr:'1955 SE Morrison St · Buckman', price:'$1,250–$1,395', pn:'Studio–2BR + 6 townhomes · built 1970', type:'apartment', beds:'2BR', score:71, status:'ok', isNew:true, lat:45.5188, lng:-122.6452,
+    gradient:'linear-gradient(135deg, #5C258D 0%, #4389A2 100%)',
+    rows:[{l:'Layout',v:'6 two-story townhomes — likely split-level',d:'g'},{l:'Natural light',v:'Energy-efficient windows',d:'g'},{l:'Kitchen',v:'Black appliances · confirm details',d:'y'},{l:'In-unit W/D',v:'No — shared on-site laundry',d:'r'},{l:'2BR',v:'Yes · townhomes are 2BR',d:'g'},{l:'Pets',v:'No pets allowed',d:'r'},{l:'Area',v:'Heart of Buckman · SE Morrison',d:'g'},{l:'Price',v:'Best-value 2BR on the list',d:'g'}],
+    flags:[{t:'Ask specifically for 2BR townhome units',c:'fb'},{t:'No pets allowed',c:'fr'},{t:'No in-unit laundry',c:'fr'}],
+    link:'https://www.portland-apartment-living.com/communities/buckman-court/', note:'59-unit building with 6 two-story townhomes that are almost certainly the split-level layout you want. Best price on the list for a 2BR. Heart of Buckman neighborhood. Hard no on pets and no in-unit laundry are the main drawbacks — call 503-726-7220 ext 1 and ask specifically about the townhome units and whether stairs lead to a lofted bedroom.' },
 ]
 
 const LMAP = Object.fromEntries(LISTINGS.map(l => [l.id, l]))
