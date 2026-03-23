@@ -18,12 +18,14 @@ interface Listing {
   gradient: string
   lat: number; lng: number
 }
+interface ContactEntry { status: 'none'|'out'|'scheduled'|'toured'; date?: string }
 interface SharedState {
   favorites: string[]
   notes: Record<string, string>
   favoriteOrder: string[]
   archived: string[]
   photos: Record<string, string>
+  contacts: Record<string, ContactEntry>
 }
 
 const LISTINGS: Listing[] = [
@@ -137,6 +139,11 @@ const LISTINGS: Listing[] = [
     rows:[{l:'Layout',v:'6 two-story townhomes — likely split-level',d:'g'},{l:'Natural light',v:'Energy-efficient windows',d:'g'},{l:'Kitchen',v:'Black appliances · confirm details',d:'y'},{l:'In-unit W/D',v:'No — shared on-site laundry',d:'r'},{l:'2BR',v:'Yes · townhomes are 2BR',d:'g'},{l:'Pets',v:'No pets allowed',d:'r'},{l:'Area',v:'Heart of Buckman · SE Morrison',d:'g'},{l:'Price',v:'Best-value 2BR on the list',d:'g'}],
     flags:[{t:'Ask specifically for 2BR townhome units',c:'fb'},{t:'No pets allowed',c:'fr'},{t:'No in-unit laundry',c:'fr'}],
     link:'https://www.portland-apartment-living.com/communities/buckman-court/', note:'59-unit building with 6 two-story townhomes that are almost certainly the split-level layout you want. Best price on the list for a 2BR. Heart of Buckman neighborhood. Hard no on pets and no in-unit laundry are the main drawbacks — call 503-726-7220 ext 1 and ask specifically about the townhome units and whether stairs lead to a lofted bedroom.' },
+  { id:'revere', name:'Revere', addr:'3309 N Mississippi Ave · Boise/Mississippi', price:'$1,356–$2,464+', pn:'Studio–2BR · 570–1,097 sqft · built 2019', type:'apartment', beds:'2BR', score:67, status:'ok', isNew:true, lat:45.5476, lng:-122.6741,
+    gradient:'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+    rows:[{l:'Layout',v:'Ground-floor split-level 1BR units',d:'g'},{l:'Natural light',v:'Confirm per unit type',d:'y'},{l:'Kitchen',v:'Stainless appliances · gas stove',d:'g'},{l:'In-unit W/D',v:'Yes — confirmed',d:'g'},{l:'2BR',v:'Yes · from $2,464',d:'y'},{l:'Amenities',v:'Bouldering wall · sauna · rooftop',d:'g'},{l:'Area',v:'N Mississippi Ave corridor',d:'g'},{l:'Pets',v:'Yes · no weight limit · $45/mo',d:'g'}],
+    flags:[{t:'Split-level units are ground floor 1BR only',c:'fb'},{t:'Car break-ins reported — street parking',c:'fr'},{t:'N Portland — further from SE/NE cluster',c:'fa'}],
+    link:'https://www.reverepdx.com/', note:'Mississippi Ave is a fantastic neighborhood — best food/drink strip in N Portland. Bouldering wall on-site is a rare amenity. The split-level units are specifically ground-floor 1BRs per the Reddit thread, and a former resident mentioned street crime (bike stolen, car broken into). Ask specifically about which units have the lofted layout. 2BR from $2,464 is above budget. Up to 6 weeks free.' },
 ]
 
 const LMAP = Object.fromEntries(LISTINGS.map(l => [l.id, l]))
@@ -253,10 +260,12 @@ function CardPhoto({ listing, photo, isArchived, onUpload }: {
 }
 
 // ── Card ──────────────────────────────────────────────────────────────────────
-function Card({ listing, isFav, isArchived, isTopPick, note, photo, onToggleFav, onToggleArchive, onNoteChange, onPhotoUpload, isDragging, isOver }:
+function Card({ listing, isFav, isArchived, isTopPick, note, photo, contact, onToggleFav, onToggleArchive, onNoteChange, onPhotoUpload, onContactUpdate, isDragging, isOver }:
   { listing: Listing; isFav: boolean; isArchived: boolean; isTopPick: boolean; note: string; photo: string
+    contact: ContactEntry
     onToggleFav: (id:string)=>void; onToggleArchive: (id:string)=>void
     onNoteChange:(id:string,v:string)=>void; onPhotoUpload:(id:string,url:string)=>void
+    onContactUpdate:(id:string,entry:ContactEntry)=>void
     isDragging?:boolean; isOver?:boolean }) {
 
   const [flipped, setFlipped] = useState(isArchived)
@@ -320,6 +329,9 @@ function Card({ listing, isFav, isArchived, isTopPick, note, photo, onToggleFav,
               {listing.type === 'cohousing' && <Badge label="cohousing" color="#f5f3ff" text="#6d28d9" />}
               {listing.beds.includes('2BR') ? <Badge label={listing.beds} color="#f5f3ff" text="#6d28d9" /> : <Badge label={listing.beds} color="#f9fafb" text="#6b7280" />}
               {isFav && <Badge label="★ fav" color="#fefce8" text="#a16207" />}
+              {contact.status === 'out' && <Badge label="📞 reached out" color="#eff6ff" text="#1d4ed8" />}
+              {contact.status === 'scheduled' && <Badge label="📅 tour scheduled" color="#fef9c3" text="#854d0e" />}
+              {contact.status === 'toured' && <Badge label="✓ toured" color="#dcfce7" text="#15803d" />}
             </div>
 
             <div style={{ fontFamily:'Georgia,serif', fontSize:17, fontWeight:600, lineHeight:1.2, color:'#111827', marginBottom:2 }}>{listing.name}</div>
@@ -402,8 +414,32 @@ function Card({ listing, isFav, isArchived, isTopPick, note, photo, onToggleFav,
               value={local}
               onChange={e => handleNote(e.target.value)}
               placeholder="Leave notes for each other… pros, cons, questions to ask…"
-              style={{ flex:1, width:'100%', minHeight:140, fontSize:13, color:'#374151', background: isArchived ? '#fff1f1' : '#f9fafb', border:`1px solid ${isArchived ? '#fca5a5' : '#e5e7eb'}`, borderRadius:10, padding:12, resize:'none', outline:'none', fontFamily:'inherit', lineHeight:1.55 }}
+              style={{ flex:1, width:'100%', minHeight:120, fontSize:13, color:'#374151', background: isArchived ? '#fff1f1' : '#f9fafb', border:`1px solid ${isArchived ? '#fca5a5' : '#e5e7eb'}`, borderRadius:10, padding:12, resize:'none', outline:'none', fontFamily:'inherit', lineHeight:1.55 }}
             />
+            {/* Contact tracker */}
+            <div style={{ marginTop:10, paddingTop:10, borderTop:'1px solid #f3f4f6' }}>
+              <div style={{ fontFamily:'monospace', fontSize:9, textTransform:'uppercase', letterSpacing:'0.1em', color:'#9ca3af', marginBottom:6 }}>Contact status</div>
+              <div style={{ display:'flex', gap:5, flexWrap:'wrap' }}>
+                {([
+                  { s:'none',     label:'Not contacted', bg:'#f3f4f6', col:'#9ca3af' },
+                  { s:'out',      label:'📞 Reached out', bg:'#eff6ff', col:'#1d4ed8' },
+                  { s:'scheduled',label:'📅 Tour scheduled', bg:'#fef9c3', col:'#854d0e' },
+                  { s:'toured',   label:'✓ Toured',       bg:'#dcfce7', col:'#15803d' },
+                ] as { s: ContactEntry['status']; label:string; bg:string; col:string }[]).map(opt => (
+                  <button key={opt.s} onClick={() => onContactUpdate(listing.id, { status: opt.s, date: opt.s !== 'none' ? new Date().toLocaleDateString() : undefined })}
+                    style={{ fontFamily:'monospace', fontSize:9, padding:'4px 9px', borderRadius:99, border:'1px solid', cursor:'pointer', letterSpacing:'0.03em',
+                      background: contact.status === opt.s ? opt.bg : '#ffffff',
+                      color: contact.status === opt.s ? opt.col : '#9ca3af',
+                      borderColor: contact.status === opt.s ? opt.col : '#e5e7eb',
+                      fontWeight: contact.status === opt.s ? 600 : 400 }}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              {contact.date && contact.status !== 'none' && (
+                <div style={{ fontFamily:'monospace', fontSize:9, color:'#9ca3af', marginTop:5 }}>updated {contact.date}</div>
+              )}
+            </div>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:10 }}>
               <span style={{ fontFamily:'monospace', fontSize:9, color:'#9ca3af' }}>auto-saves · synced</span>
               <button onClick={() => setFlipped(false)}
@@ -582,10 +618,12 @@ function KanbanGroup({ label, sublabel, empty, accentColor, children }: {
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function ApartmentsPage() {
   const [filter, setFilter] = useState('all')
-  const [state, setState] = useState<SharedState>({ favorites:[], notes:{}, favoriteOrder:[], archived:[], photos:{} })
+  const [state, setState] = useState<SharedState>({ favorites:[], notes:{}, favoriteOrder:[], archived:[], photos:{}, contacts:{} })
   const [syncing, setSyncing] = useState(false)
   const [lastSynced, setLastSynced] = useState<Date|null>(null)
   const saveTimer = useRef<ReturnType<typeof setTimeout>|null>(null)
+  const pendingSave = useRef(false)   // true while a debounced save is queued or in-flight
+  const stateRef = useRef<SharedState>({ favorites:[], notes:{}, favoriteOrder:[], archived:[], photos:{}, contacts:{} })
 
   const dragId = useRef<string|null>(null)
   const [draggingId, setDraggingId] = useState<string|null>(null)
@@ -598,19 +636,27 @@ export default function ApartmentsPage() {
   }, [])
 
   async function loadState() {
+    // Never overwrite local state while a save is pending — we'd lose unsaved changes
+    if (pendingSave.current) return
     const { data, error } = await supabase.from('apartment_state').select('data').eq('key','shared').single()
     if (!error && data?.data) {
-      setState({ favorites:[], notes:{}, favoriteOrder:[], archived:[], photos:{}, ...(data.data as SharedState) })
+      const merged: SharedState = { favorites:[], notes:{}, favoriteOrder:[], archived:[], photos:{}, contacts:{}, ...(data.data as SharedState) }
+      stateRef.current = merged
+      setState(merged)
       setLastSynced(new Date())
     }
   }
 
   const persist = useCallback((next: SharedState) => {
+    stateRef.current = next   // always keep ref current so save uses latest state
+    pendingSave.current = true
     if (saveTimer.current) clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(async () => {
       setSyncing(true)
-      await supabase.from('apartment_state').upsert({ key:'shared', data:next, updated_at:new Date().toISOString() })
-      setSyncing(false); setLastSynced(new Date())
+      await supabase.from('apartment_state').upsert({ key:'shared', data:stateRef.current, updated_at:new Date().toISOString() })
+      setSyncing(false)
+      setLastSynced(new Date())
+      pendingSave.current = false
     }, 600)
   }, [])
 
@@ -629,7 +675,20 @@ export default function ApartmentsPage() {
   }
 
   function updatePhoto(id: string, dataUrl: string) {
-    setState(prev => { const next = { ...prev, photos:{ ...prev.photos, [id]:dataUrl } }; persist(next); return next })
+    setState(prev => {
+      const next = { ...prev, photos:{ ...prev.photos, [id]:dataUrl } }
+      stateRef.current = next
+      // Photos are large — save immediately, don't debounce
+      pendingSave.current = true
+      setSyncing(true)
+      supabase.from('apartment_state').upsert({ key:'shared', data:next, updated_at:new Date().toISOString() })
+        .then(() => { setSyncing(false); setLastSynced(new Date()); pendingSave.current = false })
+      return next
+    })
+  }
+
+  function updateContact(id: string, entry: ContactEntry) {
+    setState(prev => { const next = { ...prev, contacts:{ ...(prev.contacts||{}), [id]:entry } }; persist(next); return next })
   }
 
   function toggleArchive(id: string) {
@@ -719,10 +778,12 @@ export default function ApartmentsPage() {
           isTopPick={l.id === topPickId}
           note={state.notes[l.id] || ''}
           photo={(state.photos || {})[l.id] || ''}
+          contact={(state.contacts || {})[l.id] || { status: 'none' }}
           onToggleFav={toggleFav}
           onToggleArchive={toggleArchive}
           onNoteChange={updateNote}
           onPhotoUpload={updatePhoto}
+          onContactUpdate={updateContact}
           isDragging={draggingId === l.id}
           isOver={overId === l.id && draggingId !== l.id}
         />
@@ -758,7 +819,7 @@ export default function ApartmentsPage() {
       </header>
 
       <div style={{ padding:'10px 28px', background:'#f8f7f5', borderBottom:'1px solid #e5e7eb', display:'flex', flexWrap:'wrap', alignItems:'center', gap:24 }}>
-        {[{n:allForStats.length,l:'listings'},{n:avgScore||0,l:'avg fit score'},{n:allForStats.filter(l=>l.beds.includes('2BR')).length,l:'have 2BR'},{n:state.favorites.length,l:'favorited'}].map(s=>(
+        {[{n:allForStats.length,l:'listings'},{n:avgScore||0,l:'avg fit score'},{n:allForStats.filter(l=>l.beds.includes('2BR')).length,l:'have 2BR'},{n:state.favorites.length,l:'favorited'},{n:Object.values(state.contacts as Record<string,ContactEntry>||{}).filter(c=>c.status!=='none').length,l:'contacted'},{n:Object.values(state.contacts as Record<string,ContactEntry>||{}).filter(c=>c.status==='toured').length,l:'toured'}].map(s=>(
           <div key={s.l} style={{ display:'flex', alignItems:'baseline', gap:5 }}>
             <span style={{ fontFamily:'Georgia,serif', fontSize:20 }}>{s.n||'—'}</span>
             <span style={{ fontSize:12, color:'#9ca3af' }}>{s.l}</span>
