@@ -666,9 +666,12 @@ export default function ApartmentsPage() {
   const [filter, setFilter] = useState('all')
   const [state, setState] = useState<SharedState>({ favorites:[], notes:{}, favoriteOrder:[], archived:[], photos:{}, contacts:{} })
   const [syncing, setSyncing] = useState(false)
+  const [syncError, setSyncError] = useState(false)
   const [lastSynced, setLastSynced] = useState<Date|null>(null)
   const saveTimer = useRef<ReturnType<typeof setTimeout>|null>(null)
-  const pendingSave = useRef(false)   // true while a debounced save is queued or in-flight
+  // Block polls while a save is queued/in-flight — but only for 10s max to avoid getting stuck
+  const pendingSave = useRef(false)
+  const pendingSaveTimeout = useRef<ReturnType<typeof setTimeout>|null>(null)
   const stateRef = useRef<SharedState>({ favorites:[], notes:{}, favoriteOrder:[], archived:[], photos:{}, contacts:{} })
 
   const dragId = useRef<string|null>(null)
@@ -681,28 +684,41 @@ export default function ApartmentsPage() {
     return () => clearInterval(iv)
   }, [])
 
-  async function loadState() {
-    // Never overwrite local state while a save is pending — we'd lose unsaved changes
-    if (pendingSave.current) return
-    const { data, error } = await supabase.from('apartment_state').select('data').eq('key','shared').single()
-    if (!error && data?.data) {
-      const merged: SharedState = { favorites:[], notes:{}, favoriteOrder:[], archived:[], photos:{}, contacts:{}, ...(data.data as SharedState) }
-      stateRef.current = merged
-      setState(merged)
-      setLastSynced(new Date())
+  function setPending(val: boolean) {
+    pendingSave.current = val
+    if (pendingSaveTimeout.current) clearTimeout(pendingSaveTimeout.current)
+    if (val) {
+      // Safety valve: auto-clear after 10s so a failed save never permanently blocks polls
+      pendingSaveTimeout.current = setTimeout(() => { pendingSave.current = false }, 10000)
     }
   }
 
+  async function loadState(force = false) {
+    if (!force && pendingSave.current) return
+    try {
+      const { data, error } = await supabase.from('apartment_state').select('data').eq('key','shared').single()
+      if (error) { setSyncError(true); return }
+      if (data?.data) {
+        const merged: SharedState = { favorites:[], notes:{}, favoriteOrder:[], archived:[], photos:{}, contacts:{}, ...(data.data as SharedState) }
+        stateRef.current = merged
+        setState(merged)
+        setLastSynced(new Date())
+        setSyncError(false)
+      }
+    } catch { setSyncError(true) }
+  }
+
   const persist = useCallback((next: SharedState) => {
-    stateRef.current = next   // always keep ref current so save uses latest state
-    pendingSave.current = true
+    stateRef.current = next
+    setPending(true)
     if (saveTimer.current) clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(async () => {
       setSyncing(true)
-      await supabase.from('apartment_state').upsert({ key:'shared', data:stateRef.current, updated_at:new Date().toISOString() })
-      setSyncing(false)
-      setLastSynced(new Date())
-      pendingSave.current = false
+      try {
+        const { error } = await supabase.from('apartment_state').upsert({ key:'shared', data:stateRef.current, updated_at:new Date().toISOString() })
+        if (error) { setSyncError(true) } else { setLastSynced(new Date()); setSyncError(false) }
+      } catch { setSyncError(true) }
+      finally { setSyncing(false); setPending(false) }
     }, 600)
   }, [])
 
@@ -721,16 +737,23 @@ export default function ApartmentsPage() {
   }
 
   function updatePhoto(id: string, dataUrl: string) {
+    // Save immediately (no debounce) — but do it outside setState to avoid calling async inside state updater
     setState(prev => {
       const next = { ...prev, photos:{ ...prev.photos, [id]:dataUrl } }
       stateRef.current = next
-      // Photos are large — save immediately, don't debounce
-      pendingSave.current = true
-      setSyncing(true)
-      supabase.from('apartment_state').upsert({ key:'shared', data:next, updated_at:new Date().toISOString() })
-        .then(() => { setSyncing(false); setLastSynced(new Date()); pendingSave.current = false })
       return next
     })
+    // Fire the save after state is updated
+    setPending(true)
+    setSyncing(true)
+    const toSave = { ...stateRef.current, photos: { ...stateRef.current.photos, [id]: dataUrl } }
+    stateRef.current = toSave
+    supabase.from('apartment_state').upsert({ key:'shared', data:toSave, updated_at:new Date().toISOString() })
+      .then(({ error }) => {
+        if (error) { setSyncError(true) } else { setLastSynced(new Date()); setSyncError(false) }
+      })
+      .catch(() => setSyncError(true))
+      .finally(() => { setSyncing(false); setPending(false) })
   }
 
   function updateContact(id: string, entry: ContactEntry) {
@@ -872,9 +895,14 @@ export default function ApartmentsPage() {
           </div>
         ))}
         <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:8 }}>
+          {syncError && (
+            <button onClick={() => loadState(true)} style={{ fontFamily:'monospace', fontSize:10, color:'#dc2626', background:'#fef2f2', border:'1px solid #fca5a5', borderRadius:6, cursor:'pointer', padding:'3px 8px' }}>
+              ⚠ sync error — tap to retry
+            </button>
+          )}
           {syncing ? <span style={{ fontFamily:'monospace', fontSize:10, color:'#7c3aed' }}>saving…</span>
-            : lastSynced && <span style={{ fontFamily:'monospace', fontSize:10, color:'#9ca3af' }}>synced {lastSynced.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>}
-          <div style={{ width:7, height:7, borderRadius:'50%', background: syncing ? '#7c3aed' : '#16a34a' }} />
+            : lastSynced && !syncError && <span style={{ fontFamily:'monospace', fontSize:10, color:'#9ca3af' }}>synced {lastSynced.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>}
+          <div style={{ width:7, height:7, borderRadius:'50%', background: syncError ? '#dc2626' : syncing ? '#7c3aed' : '#16a34a' }} />
         </div>
         <div style={{ display:'flex', gap:14, fontFamily:'monospace', fontSize:10, color:'#9ca3af' }}>
           {[['g','confirmed'],['y','ask/likely'],['r','dealbreaker']].map(([d,l])=>(
