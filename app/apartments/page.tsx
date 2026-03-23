@@ -117,6 +117,11 @@ const LISTINGS: Listing[] = [
     rows:[{l:'Natural light',v:'22-ft ceilings · oversized skylights',d:'g'},{l:'Kitchen',v:'Stainless steel appliances',d:'y'},{l:'In-unit W/D',v:'No — on-site shared laundry',d:'r'},{l:'2BR',v:'Yes · 1,004–1,486 sqft',d:'g'},{l:'Flooring',v:'Hardwood',d:'g'},{l:'Seismic',v:'Historic conversion',d:'y'},{l:'Pets',v:'Dogs allowed (45lb max)',d:'y'}],
     flags:[{t:'⚠ Income-qualified housing — must verify eligibility',c:'fr'},{t:'Mixed reviews — management complaints',c:'fr'},{t:'No in-unit laundry',c:'fr'}],
     link:'https://www.belmontdairy.com/', note:'Stunning 22-foot ceilings and skylights in a converted dairy building. BUT: affordable housing with income caps — you must qualify. Also shared laundry only and management reviews are very mixed. Verify income eligibility before getting attached.' },
+  { id:'park19', name:'Park 19', addr:'550 NW 19th Ave · Alphabet District', price:'2BR from $2,512', pn:'Studio–2BR · 529–1,168 sqft · managed by Greystar', type:'apartment', beds:'2BR', score:65, status:'ok', isNew:true, lat:45.5270, lng:-122.6928,
+    gradient:'linear-gradient(135deg, #2c3e50 0%, #3498db 100%)',
+    rows:[{l:'Natural light',v:'Large windows · park views',d:'g'},{l:'Kitchen',v:'Modern finishes — confirm details',d:'y'},{l:'In-unit W/D',v:'Confirm — not listed explicitly',d:'y'},{l:'2BR',v:'Yes · up to 1,168 sqft',d:'g'},{l:'Area',v:'Alphabet District · NW Portland',d:'g'},{l:'Management',v:'Greystar · excellent reviews',d:'g'},{l:'Walk',v:'Couch Park · Washington Park · Pearl',d:'g'},{l:'Seismic',v:'Established building',d:'y'}],
+    flags:[{t:'2BR above $2k budget',c:'fa'},{t:'NW Portland — not eastside',c:'fb'}],
+    link:'https://www.livepark19.com/', note:'Exceptionally well-reviewed building — residents stay for years. Overlooks Couch Park, walkable to Washington Park and Forest Park. Alphabet District is charming but less "cool eastside" than your other picks. Worth a tour if NW vibe works for you.' },
 ]
 
 const LMAP = Object.fromEntries(LISTINGS.map(l => [l.id, l]))
