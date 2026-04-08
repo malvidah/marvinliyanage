@@ -9,6 +9,7 @@ type Props = {
   title: string
   isAdmin: boolean
   onUploaded: (url: string) => void
+  projectUrl?: string | null
   style?: React.CSSProperties
 }
 
@@ -19,6 +20,7 @@ export default function EditableImage({
   title,
   isAdmin,
   onUploaded,
+  projectUrl,
   style,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
@@ -45,6 +47,14 @@ export default function EditableImage({
     }
   }
 
+  const handleClick = () => {
+    if (isAdmin) {
+      inputRef.current?.click()
+    } else if (projectUrl) {
+      window.open(projectUrl, "_blank", "noopener noreferrer")
+    }
+  }
+
   return (
     <div
       className={imageUrl ? undefined : gradientClass}
@@ -52,11 +62,11 @@ export default function EditableImage({
         ...style,
         position: "relative",
         overflow: "hidden",
-        cursor: isAdmin ? "pointer" : "default",
+        cursor: isAdmin ? "pointer" : projectUrl ? "pointer" : "default",
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onClick={() => isAdmin && inputRef.current?.click()}
+      onClick={handleClick}
     >
       {imageUrl ? (
         <img
@@ -73,18 +83,20 @@ export default function EditableImage({
         <span
           style={{
             fontFamily: "var(--font-display)",
-            fontSize: "clamp(24px, 3vw, 48px)",
+            fontSize: "clamp(16px, 2.5vw, 40px)",
             fontWeight: 700,
             color: "rgba(255,255,255,0.9)",
             letterSpacing: "0.06em",
             textTransform: "uppercase",
             textAlign: "center",
-            padding: "0 20px",
+            padding: "0 24px",
             position: "absolute",
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            whiteSpace: "nowrap",
+            width: "100%",
+            wordBreak: "break-word",
+            lineHeight: 1.2,
           }}
         >
           {title}

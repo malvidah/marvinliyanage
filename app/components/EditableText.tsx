@@ -48,20 +48,8 @@ export default function EditableText({
   )
 
   const adminStyles: React.CSSProperties =
-    isAdmin && hovered && !editing
-      ? {
-          outline: "1px dashed rgba(0,0,0,0.15)",
-          outlineOffset: 4,
-          borderRadius: 4,
-          cursor: "text",
-        }
-      : isAdmin && editing
-      ? {
-          outline: "2px solid rgba(26,26,26,0.3)",
-          outlineOffset: 4,
-          borderRadius: 4,
-          background: "rgba(245,245,240,0.5)",
-        }
+    isAdmin
+      ? { cursor: "text" }
       : {}
 
   return (

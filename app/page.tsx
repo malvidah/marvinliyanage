@@ -313,6 +313,7 @@ export default function Home() {
             title={entry.title}
             isAdmin={isAdmin}
             onUploaded={(url) => handleImageUploaded(entry.slug, url)}
+            projectUrl={entry.url}
             style={{ width: "100%", aspectRatio: "16 / 10", borderRadius: 16, marginBottom: 28 }}
           />
 
@@ -331,29 +332,16 @@ export default function Home() {
             </div>
             <div>
               <div style={{ fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink3)", marginBottom: 6 }}>
-                CATEGORY
+                ROLE
               </div>
               <EditableText
                 as="div"
-                value={entry.org}
+                value={entry.role}
                 isAdmin={isAdmin}
-                onSave={(v) => saveEntryField(entry.slug, "org", v)}
+                onSave={(v) => saveEntryField(entry.slug, "role", v)}
                 style={{ fontFamily: "var(--font-sans)", fontSize: 14 }}
               />
             </div>
-          </div>
-
-          <div style={{ marginBottom: 28 }}>
-            <div style={{ fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink3)", marginBottom: 6 }}>
-              ROLE
-            </div>
-            <EditableText
-              as="div"
-              value={entry.role}
-              isAdmin={isAdmin}
-              onSave={(v) => saveEntryField(entry.slug, "role", v)}
-              style={{ fontFamily: "var(--font-sans)", fontSize: 14 }}
-            />
           </div>
 
           <EditableText
