@@ -1,795 +1,470 @@
-import Link from "next/link"
+"use client"
 
-const PROJECTS = [
-  {
-    slug: "day-lab",
-    title: "Day Lab",
-    url: "https://daylab.me",
-    github: "https://github.com/malvidah/lifeos",
-    year: "2023–now",
-    role: "Solo — design, engineering",
-    tags: ["Next.js 14", "Supabase", "Electron", "iOS"],
-    status: "live",
-    description:
-      "A personal life OS for tracking health, tasks, meals, journal entries, and activity. Syncs Oura, Strava, Apple Health, and Google Calendar into a single unified view. Released as a Mac app (notarized DMG) and iOS (TestFlight).",
-    highlight: "Replaced 6 separate apps for myself",
-  },
-  {
-    slug: "audian",
-    title: "Audian",
-    url: "https://audian.app",
-    github: "https://github.com/malvidah/audian",
-    year: "2024–now",
-    role: "Solo — design, engineering",
-    tags: ["Next.js", "Playwright", "Railway", "Instagram API"],
-    status: "live",
-    description:
-      "A social analytics dashboard built to replace a paid Brandwatch subscription for Big Think. Features a split-pane staging queue with keyboard navigation, inline editing, bulk actions, and a self-hosted Playwright service for live Instagram screenshots.",
-    highlight: "Saves ~$600/mo vs. Brandwatch",
-  },
-  {
-    slug: "curiosity-lab",
-    title: "Curiosity Lab",
-    url: "https://www.youtube.com/@bigthink",
-    github: null,
-    year: "2022–now",
-    role: "Creator, host, editor",
-    tags: ["Video", "Science communication", "Big Think"],
-    status: "ongoing",
-    description:
-      "An original video series for Big Think exploring the edges of science, consciousness, and human behavior — from MIT ultrasound consciousness research to the neuroscience of creativity. Written, produced, and presented by me.",
-    highlight: "100M+ views across the channel",
-  },
-]
+import { useState, useEffect, useCallback } from "react"
+import EditableText from "./components/EditableText"
+import EditableImage from "./components/EditableImage"
+import EditBar, { useAdmin } from "./components/EditBar"
 
-const TIMELINE = [
-  {
-    year: "2022–now",
-    org: "Big Think",
-    role: "Editorial Social Strategy Lead",
-    detail:
-      "Own cross-platform content strategy across Instagram, YouTube, and LinkedIn. Produce original video series, manage data pipelines from GA4 to membership revenue attribution.",
-  },
-  {
-    year: "2020–2022",
-    org: "Freelance",
-    role: "Content & Experience Designer",
-    detail:
-      "Created editorial content and interactive experiences for media and education clients. Developed curriculum and facilitated workshops.",
-  },
-]
+/* ─── TYPES ─── */
 
-function StatusDot({ status }: { status: string }) {
-  const color =
-    status === "live"
-      ? "#C8F53C"
-      : status === "ongoing"
-      ? "#F5A623"
-      : "#605C54"
-  return (
-    <span
-      style={{
-        display: "inline-block",
-        width: 7,
-        height: 7,
-        borderRadius: "50%",
-        background: color,
-        flexShrink: 0,
-        marginTop: 2,
-        boxShadow: status === "live" ? `0 0 8px ${color}60` : "none",
-      }}
-    />
-  )
+type Entry = {
+  id: number
+  slug: string
+  title: string
+  org: string
+  date: string
+  url: string | null
+  github: string | null
+  role: string
+  tags: string[]
+  status: string
+  gradient: string
+  description: string
+  highlight: string | null
+  entry_type: string
+  image_url: string | null
+  sort_order: number
 }
 
+type AboutMap = Record<string, string>
+
+/* ─── FALLBACK DATA ─── */
+const FALLBACK_ENTRIES: Entry[] = [
+  { id:1, slug:"big-think", title:"BIG THINK", org:"Media & Strategy", date:"2022 – Present", url:"https://bigthink.com", github:null, role:"Social Strategy Lead (2026 – Present) · Editorial Social Media Manager (2024 – 2026)", tags:["Content Strategy","Video Editing","Social Media","Analytics","GA4"], status:"live", gradient:"gradient-card-1", description:"Own cross-platform content strategy across Instagram, YouTube, and LinkedIn. Produce original video series, manage data pipelines from GA4 to membership revenue attribution. Previously managed editorial social presence, developed content calendars, audience growth strategies, and analytics reporting.", highlight:null, entry_type:"role", image_url:null, sort_order:0 },
+  { id:2, slug:"curiosity-lab", title:"CURIOSITY LAB", org:"Big Think · Video Series", date:"2022 – Present", url:"https://www.youtube.com/@bigthink", github:null, role:"Creator, host, editor", tags:["Video","Science Communication","Big Think"], status:"ongoing", gradient:"gradient-card-2", description:"An original video series for Big Think exploring the edges of science, consciousness, and human behavior — from MIT ultrasound consciousness research to the neuroscience of creativity. Written, produced, and presented by me.", highlight:"100M+ views across the channel", entry_type:"project", image_url:null, sort_order:1 },
+  { id:3, slug:"audian", title:"AUDIAN", org:"Personal Project", date:"2024 – Present", url:"https://audian.app", github:"https://github.com/malvidah/audian", role:"Solo — design, engineering", tags:["Next.js","Playwright","Railway","Instagram API"], status:"live", gradient:"gradient-card-3", description:"A social analytics dashboard built to replace a paid Brandwatch subscription for Big Think. Features a split-pane staging queue with keyboard navigation, inline editing, bulk actions, and a self-hosted Playwright service for live Instagram screenshots.", highlight:"Saves ~$600/mo vs. Brandwatch", entry_type:"project", image_url:null, sort_order:2 },
+  { id:4, slug:"day-lab", title:"DAY LAB", org:"Personal Project", date:"2023 – Present", url:"https://daylab.me", github:"https://github.com/malvidah/lifeos", role:"Solo — design, engineering", tags:["Next.js 14","Supabase","Electron","iOS"], status:"live", gradient:"gradient-card-4", description:"A personal life OS for tracking health, tasks, meals, journal entries, and activity. Syncs Oura, Strava, Apple Health, and Google Calendar into a single unified view. Released as a Mac app (notarized DMG) and iOS (TestFlight).", highlight:"Replaced 6 separate apps", entry_type:"project", image_url:null, sort_order:3 },
+  { id:5, slug:"nas-company", title:"NAS COMPANY", org:"Media & Content", date:"2024", url:null, github:null, role:"Project Manager (2024) · Host / Scriptwriter (2024)", tags:["Media Strategy","Partnership Development","Scriptwriting","Video Production"], status:"past", gradient:"gradient-card-1", description:"Wrote and designed partnership proposals and content strategies that generated $1M+ in revenue and delivered 68M+ views and 100,000+ leads for clients. Developed content strategy, wrote viral scripts, filmed, and presented content for a client channel focused on science, tech, and AI that reached 7M+ people and 4x'd the client's followers in 1 month.", highlight:"$1M+ revenue, 7M+ reach", entry_type:"role", image_url:null, sort_order:4 },
+  { id:6, slug:"national-heritage-academies", title:"NATIONAL HERITAGE ACADEMIES", org:"Education", date:"2022 – 2023", url:null, github:null, role:"Consultant", tags:["Curriculum Design","AI in Education","Growth Marketing"], status:"past", gradient:"gradient-card-2", description:"Led the design of a new physical science curriculum and the safe implementation of AI tools in classrooms for one of the largest charter school operators in the world (100+ schools, 65K+ students, tuition free).", highlight:"100+ schools, 65K+ students", entry_type:"role", image_url:null, sort_order:5 },
+  { id:7, slug:"curyte", title:"CURYTE", org:"EdTech Startup", date:"2021 – 2022", url:null, github:null, role:"Co-Founder", tags:["Product Marketing","Business Development","User Research"], status:"past", gradient:"gradient-card-3", description:"Founded and directed product marketing and business development for an education resource platform that uses AI to make lesson planning faster and easier for teachers and more accessible and engaging for students. Conducted user research interviews to inform product and marketing strategy.", highlight:null, entry_type:"project", image_url:null, sort_order:6 },
+  { id:8, slug:"academy-of-thought-and-industry", title:"ACADEMY OF THOUGHT AND INDUSTRY", org:"Education", date:"2021 – 2022", url:null, github:null, role:"Community Lead & Science Guide", tags:["Science Education","Curriculum Design","Leadership"], status:"past", gradient:"gradient-card-4", description:"Coordinated with head of San Francisco ATI schools to lead a Montessori high school with 5 teachers. Made decisions regarding COVID policy, grading, curriculum, transcripts, graduation requirements, school schedule, events, and partnerships. Taught NGSS-aligned project-based curriculum for Chemistry, Physics, and Biology.", highlight:null, entry_type:"role", image_url:null, sort_order:7 },
+  { id:9, slug:"san-francisco-unified", title:"SAN FRANCISCO UNIFIED", org:"Education", date:"2018 – 2021", url:null, github:null, role:"Physics Lead & HSA Teacher (2019 – 2021) · Physics Teacher (2018 – 2019)", tags:["Science Education","Curriculum Design","Storytelling"], status:"past", gradient:"gradient-card-1", description:"Led a team of 4 in designing and instructing curriculum for physics. Taught 3 sections of physics and 2 sections of senior-level public health. Led professional development for 100+ teachers on project-based learning. Collaborated with the Exploratorium, UCSF, and Stanford.", highlight:"PD for 100+ teachers", entry_type:"role", image_url:null, sort_order:8 },
+  { id:10, slug:"cercle", title:"CERCLE", org:"Music & Events", date:"2016 – 2018", url:null, github:null, role:"Co-Founder", tags:["Marketing","Event Production","Social Media","Branding"], status:"past", gradient:"gradient-card-2", description:"Helped found and raise initial funding for Cercle, a live-streaming and music event company. Collaborated on branding decisions, artist contacts, and event organization. Worked on social media campaigning and advertising through media contracts.", highlight:null, entry_type:"project", image_url:null, sort_order:9 },
+  { id:11, slug:"bonn-university", title:"BONN UNIVERSITY", org:"Neuroscience", date:"2015 – 2017", url:null, github:null, role:"Masters Student · Graduate Research Assistant", tags:["Quantitative Research","Neuroscience"], status:"past", gradient:"gradient-card-3", description:"Master's thesis in synaptic transmission and molecular correlates of learning and memory. Graduate research assistant conducting neuroscience research.", highlight:null, entry_type:"role", image_url:null, sort_order:10 },
+  { id:12, slug:"salk-institute", title:"SALK INSTITUTE", org:"Neuroscience", date:"2015", url:null, github:null, role:"Research Assistant", tags:["Quantitative Research","Neuroscience"], status:"past", gradient:"gradient-card-4", description:"Assisted in data collection for a research paper published in Nature Neuroscience: Pathological priming causes developmental gene network heterochronicity in autistic subject-derived neurons.", highlight:"Published in Nature Neuroscience", entry_type:"role", image_url:null, sort_order:11 },
+  { id:13, slug:"ucsb", title:"UC SANTA BARBARA", org:"Research", date:"2012 – 2015", url:null, github:null, role:"Undergraduate Research Assistant — Neuroscience Research Institute · Vision & Image Understanding Lab", tags:["Neuroscience","Computer Vision","Research"], status:"past", gradient:"gradient-card-1", description:"Undergraduate research assistant across two labs: the Neuroscience Research Institute and the Vision & Image Understanding lab at UC Santa Barbara.", highlight:null, entry_type:"role", image_url:null, sort_order:12 },
+  { id:14, slug:"scripps-research", title:"SCRIPPS RESEARCH INSTITUTE", org:"Biology", date:"2012", url:null, github:null, role:"Research Assistant", tags:["Research","Biology"], status:"past", gradient:"gradient-card-2", description:"Research assistant at The Scripps Research Institute in San Diego.", highlight:null, entry_type:"role", image_url:null, sort_order:13 },
+]
+
+const FALLBACK_ABOUT: AboutMap = {
+  about_1: "I lead social strategy at Big Think, produce the Curiosity Lab video series, and build software tools for my own work — including a life OS and a social analytics platform.",
+  about_2: "I think a lot about media, attention, and what it means to make something worth watching.",
+  contact_heading: "Let\u2019s talk.",
+  contact_body: "Open to interesting conversations about media, AI, tools, or anything else that sits at the edge of something.",
+}
+
+const LINKS = [
+  { label: "GitHub", href: "https://github.com/malvidah" },
+  { label: "LinkedIn", href: "https://linkedin.com/in/marvinliyanage" },
+  { label: "Email", href: "mailto:marvin@marvinliyanage.com" },
+]
+
+const STACK = [
+  "Next.js", "TypeScript", "Supabase", "Vercel", "Tailwind",
+  "Electron", "Playwright", "TipTap", "GA4", "Figma",
+  "Python", "SQLite", "Railway", "GitHub Actions",
+]
+
+/* ─── COMPONENT ─── */
+
 export default function Home() {
+  const { isAdmin } = useAdmin()
+  const [entries, setEntries] = useState<Entry[]>(FALLBACK_ENTRIES)
+  const [about, setAbout] = useState<AboutMap>(FALLBACK_ABOUT)
+  const [activeIndex, setActiveIndex] = useState(0)
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    fetch("/api/content")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.entries?.length) setEntries(data.entries)
+        if (data.about && Object.keys(data.about).length) setAbout(data.about)
+        setLoaded(true)
+      })
+      .catch(() => setLoaded(true))
+  }, [])
+
+  const entry = entries[activeIndex] ?? entries[0]
+
+  const saveEntryField = useCallback(
+    (slug: string, field: string, value: string) => {
+      fetch("/api/content", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ table: "site_entries", slug, field, value }),
+      })
+      setEntries((prev) =>
+        prev.map((e) => (e.slug === slug ? { ...e, [field]: value } : e))
+      )
+    },
+    []
+  )
+
+  const saveAbout = useCallback(
+    (key: string, value: string) => {
+      fetch("/api/content", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ table: "site_about", key, value }),
+      })
+      setAbout((prev) => ({ ...prev, [key]: value }))
+    },
+    []
+  )
+
+  const handleImageUploaded = useCallback(
+    (slug: string, url: string) => {
+      setEntries((prev) =>
+        prev.map((e) => (e.slug === slug ? { ...e, image_url: url } : e))
+      )
+    },
+    []
+  )
+
   return (
-    <main
-      style={{
-        background: "var(--bg)",
-        color: "var(--ink)",
-        minHeight: "100vh",
-        fontFamily: "var(--font-display)",
-      }}
-    >
-      {/* ── NAV ── */}
-      <nav
+    <main style={{ minHeight: "100vh" }}>
+      {/* ═══ HEADER ═══ */}
+      <header
+        className="header-bar"
         style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 50,
-          padding: "0 32px",
-          height: 56,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
           borderBottom: "1px solid var(--border)",
-          background: "rgba(12,11,9,0.85)",
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
+          padding: "20px 32px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
         }}
       >
-        <span
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 12,
-            color: "var(--ink2)",
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-          }}
-        >
-          marvinliyanage.com
-        </span>
-        <div style={{ display: "flex", gap: 28, alignItems: "center" }}>
-          {[
-            { label: "Projects", href: "#projects" },
-            { label: "Work", href: "#work" },
-            { label: "Contact", href: "#contact" },
-          ].map((l) => (
+        <nav style={{ display: "flex", gap: 24, alignItems: "center" }}>
+          {LINKS.map((l) => (
             <a
-              key={l.href}
+              key={l.label}
               href={l.href}
-              className="nav-link"
+              target={l.href.startsWith("http") ? "_blank" : undefined}
+              rel={l.href.startsWith("http") ? "noopener noreferrer" : undefined}
+              className="link-underline"
+              style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--ink2)" }}
             >
               {l.label}
             </a>
           ))}
-        </div>
-      </nav>
+        </nav>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ink3)" }}>
+          San Francisco & Portland
+        </span>
+      </header>
 
-      {/* ── HERO ── */}
+      {/* ═══ NAME ═══ */}
       <section
         style={{
-          paddingTop: 160,
-          paddingBottom: 120,
-          paddingLeft: "clamp(24px, 5vw, 80px)",
-          paddingRight: "clamp(24px, 5vw, 80px)",
+          padding: "48px 32px 40px",
           borderBottom: "1px solid var(--border)",
-          position: "relative",
           overflow: "hidden",
         }}
       >
-        {/* Background text watermark */}
-        <div
-          aria-hidden
+        <h1
           style={{
-            position: "absolute",
-            top: "50%",
-            right: "-2%",
-            transform: "translateY(-50%)",
-            fontSize: "clamp(120px, 20vw, 320px)",
-            fontWeight: 900,
+            fontFamily: "var(--font-display)",
+            fontSize: "clamp(40px, 8vw, 120px)",
+            fontWeight: 700,
             lineHeight: 1,
-            color: "transparent",
-            WebkitTextStroke: "1px rgba(240,235,225,0.04)",
-            pointerEvents: "none",
-            userSelect: "none",
-            letterSpacing: "-0.03em",
+            letterSpacing: "-0.02em",
+            textTransform: "uppercase",
+            color: "var(--ink)",
+            whiteSpace: "nowrap",
           }}
         >
-          ML
-        </div>
+          MARVIN LIYANAGE
+        </h1>
+      </section>
 
-        <div style={{ position: "relative", maxWidth: 900 }}>
-          <div
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              color: "var(--accent)",
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              marginBottom: 24,
-            }}
-          >
-            San Francisco → Portland · 2026
+      {/* ═══ THREE PANEL ═══ */}
+      <div className="three-panel">
+        {/* ── LEFT: ABOUT ── */}
+        <aside
+          className="panel-left"
+          style={{
+            borderRight: "1px solid var(--border)",
+            padding: "32px 28px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+          }}
+        >
+          <div>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 24 }}>
+              ABOUT
+            </div>
+            <EditableText
+              as="p"
+              value={about.about_1 ?? FALLBACK_ABOUT.about_1}
+              isAdmin={isAdmin}
+              onSave={(v) => saveAbout("about_1", v)}
+              multiline
+              style={{ fontFamily: "var(--font-serif)", fontSize: 15, lineHeight: 1.7, color: "var(--ink2)", marginBottom: 28 }}
+            />
+            <EditableText
+              as="p"
+              value={about.about_2 ?? FALLBACK_ABOUT.about_2}
+              isAdmin={isAdmin}
+              onSave={(v) => saveAbout("about_2", v)}
+              multiline
+              style={{ fontFamily: "var(--font-serif)", fontSize: 15, lineHeight: 1.7, color: "var(--ink2)", marginBottom: 32 }}
+            />
+
+            <div style={{ fontFamily: "var(--font-display)", fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 14 }}>
+              CAPABILITIES
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 32 }}>
+              {["Content Strategy", "Product Design", "Full-Stack Engineering", "Video Production", "Data Analysis"].map((s) => (
+                <span key={s} style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--ink2)" }}>{s}</span>
+              ))}
+            </div>
           </div>
 
-          <h1
-            style={{
-              fontSize: "clamp(52px, 8vw, 108px)",
-              fontWeight: 700,
-              lineHeight: 0.95,
-              letterSpacing: "-0.02em",
-              marginBottom: 32,
-              color: "var(--ink)",
-            }}
-          >
-            Marvin
-            <br />
-            <em
-              style={{
-                fontStyle: "italic",
-                fontWeight: 300,
-                color: "var(--ink2)",
-              }}
-            >
-              Liyanage
-            </em>
-          </h1>
+          <div style={{ marginTop: 32 }}>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 12 }}>
+              STACK
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {STACK.map((s) => (
+                <span key={s} style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ink3)", padding: "3px 8px", border: "1px solid var(--border)", borderRadius: 3 }}>
+                  {s}
+                </span>
+              ))}
+            </div>
+          </div>
+        </aside>
 
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "8px 24px",
-              marginBottom: 40,
-            }}
-          >
-            {[
-              "Editorial Social Strategy Lead",
-              "Big Think",
-              "Builder",
-              "Curious person",
-            ].map((tag, i) => (
-              <span
-                key={tag}
+        {/* ── MIDDLE: PROJECTS LIST ── */}
+        <div
+          className="panel-mid"
+          style={{ borderRight: "1px solid var(--border)", display: "flex", flexDirection: "column" }}
+        >
+          <div style={{ padding: "32px 28px 16px" }}>
+            <span style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+              PROJECTS
+            </span>
+          </div>
+
+          <div style={{ flex: 1, overflow: "auto" }}>
+            {entries.map((p, i) => (
+              <div
+                key={p.slug}
+                className={`project-row ${i === activeIndex ? "active" : ""}`}
+                onClick={() => setActiveIndex(i)}
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 12,
-                  color: i === 1 ? "var(--accent)" : "var(--ink2)",
-                  letterSpacing: "0.06em",
+                  padding: "16px 28px",
+                  borderBottom: "1px solid var(--border)",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 12,
                 }}
               >
-                {i > 0 ? "· " : ""}
+                <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                  <span
+                    style={{
+                      width: 7, height: 7, borderRadius: "50%",
+                      background: p.status === "live" ? "#22C55E" : p.status === "ongoing" ? "#F59E0B" : "var(--border-dark)",
+                      display: "inline-block", flexShrink: 0,
+                    }}
+                  />
+                  <div style={{ minWidth: 0 }}>
+                    <EditableText
+                      value={p.title}
+                      isAdmin={isAdmin}
+                      onSave={(v) => saveEntryField(p.slug, "title", v)}
+                      style={{
+                        fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 700,
+                        letterSpacing: "0.03em", textTransform: "uppercase",
+                        lineHeight: 1.2, display: "block",
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                      }}
+                    />
+                    <EditableText
+                      value={p.org}
+                      isAdmin={isAdmin}
+                      onSave={(v) => saveEntryField(p.slug, "org", v)}
+                      style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ink3)", marginTop: 2, display: "block" }}
+                    />
+                  </div>
+                </div>
+                <span
+                  style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ink3)", whiteSpace: "nowrap", flexShrink: 0 }}
+                >
+                  {p.date}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── RIGHT: PROJECT DETAIL ── */}
+        <div style={{ padding: "32px 28px", overflow: "auto" }}>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 24 }}>
+            PROJECT DETAIL
+          </div>
+
+          <EditableImage
+            slug={entry.slug}
+            imageUrl={entry.image_url}
+            gradientClass={entry.gradient}
+            title={entry.title}
+            isAdmin={isAdmin}
+            onUploaded={(url) => handleImageUploaded(entry.slug, url)}
+            style={{ width: "100%", aspectRatio: "16 / 10", borderRadius: 16, marginBottom: 28 }}
+          />
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 28 }}>
+            <div>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink3)", marginBottom: 6 }}>
+                DATE
+              </div>
+              <EditableText
+                as="div"
+                value={entry.date}
+                isAdmin={isAdmin}
+                onSave={(v) => saveEntryField(entry.slug, "date", v)}
+                style={{ fontFamily: "var(--font-sans)", fontSize: 14 }}
+              />
+            </div>
+            <div>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink3)", marginBottom: 6 }}>
+                CATEGORY
+              </div>
+              <EditableText
+                as="div"
+                value={entry.org}
+                isAdmin={isAdmin}
+                onSave={(v) => saveEntryField(entry.slug, "org", v)}
+                style={{ fontFamily: "var(--font-sans)", fontSize: 14 }}
+              />
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 28 }}>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink3)", marginBottom: 6 }}>
+              ROLE
+            </div>
+            <EditableText
+              as="div"
+              value={entry.role}
+              isAdmin={isAdmin}
+              onSave={(v) => saveEntryField(entry.slug, "role", v)}
+              style={{ fontFamily: "var(--font-sans)", fontSize: 14 }}
+            />
+          </div>
+
+          <EditableText
+            as="p"
+            value={entry.description}
+            isAdmin={isAdmin}
+            onSave={(v) => saveEntryField(entry.slug, "description", v)}
+            multiline
+            style={{ fontFamily: "var(--font-serif)", fontSize: 16, lineHeight: 1.75, color: "var(--ink2)", marginBottom: 24 }}
+          />
+
+          {entry.highlight && (
+            <EditableText
+              as="div"
+              value={entry.highlight}
+              isAdmin={isAdmin}
+              onSave={(v) => saveEntryField(entry.slug, "highlight", v)}
+              style={{
+                fontFamily: "var(--font-sans)", fontSize: 14, fontWeight: 600,
+                padding: "12px 16px", background: "var(--bg-alt)", borderRadius: 10,
+                marginBottom: 24, display: "inline-block",
+              }}
+            />
+          )}
+
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 28 }}>
+            {entry.tags.map((tag) => (
+              <span key={tag} style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ink3)", padding: "4px 10px", border: "1px solid var(--border)", borderRadius: 4 }}>
                 {tag}
               </span>
             ))}
           </div>
 
-          <p
-            style={{
-              fontSize: 18,
-              lineHeight: 1.65,
-              color: "var(--ink2)",
-              maxWidth: 560,
-              fontWeight: 300,
-            }}
-          >
-            I lead social strategy at Big Think, produce the{" "}
-            <em style={{ color: "var(--ink)", fontStyle: "italic" }}>
-              Curiosity Lab
-            </em>{" "}
-            video series, and build software tools for my own work —
-            including a life OS and a social analytics platform. I think
-            a lot about media, attention, and what it means to make
-            something worth watching.
-          </p>
-
-          <div
-            style={{ display: "flex", gap: 16, marginTop: 40, flexWrap: "wrap" }}
-          >
-            <a
-              href="#projects"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "10px 22px",
-                background: "var(--accent)",
-                color: "var(--bg)",
-                borderRadius: 6,
-                fontFamily: "var(--font-mono)",
-                fontSize: 12,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                fontWeight: 500,
-                transition: "background 0.15s",
-                cursor: "pointer",
-              }}
-            >
-              View projects
-            </a>
-            <a
-              href="https://github.com/malvidah"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "10px 22px",
-                border: "1px solid var(--border2)",
-                color: "var(--ink2)",
-                borderRadius: 6,
-                fontFamily: "var(--font-mono)",
-                fontSize: 12,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                transition: "border-color 0.15s, color 0.15s",
-              }}
-            >
-              GitHub
-            </a>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            {entry.url && (
+              <a href={entry.url} target="_blank" rel="noopener noreferrer"
+                style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#fff", background: "var(--ink)", padding: "10px 24px", borderRadius: 8 }}>
+                Visit
+              </a>
+            )}
+            {entry.github && (
+              <a href={entry.github} target="_blank" rel="noopener noreferrer"
+                style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink)", border: "1px solid var(--border-dark)", padding: "10px 24px", borderRadius: 8 }}>
+                GitHub
+              </a>
+            )}
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* ── PROJECTS ── */}
+      {/* ═══ CONTACT ═══ */}
       <section
-        id="projects"
+        className="contact-strip"
         style={{
-          paddingTop: 100,
-          paddingBottom: 100,
-          paddingLeft: "clamp(24px, 5vw, 80px)",
-          paddingRight: "clamp(24px, 5vw, 80px)",
+          padding: "48px 32px",
           borderBottom: "1px solid var(--border)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "baseline",
-            gap: 16,
-            marginBottom: 64,
-          }}
-        >
-          <h2
-            style={{
-              fontSize: "clamp(32px, 4vw, 52px)",
-              fontWeight: 700,
-              letterSpacing: "-0.02em",
-              lineHeight: 1,
-            }}
-          >
-            Projects
-          </h2>
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 12,
-              color: "var(--ink3)",
-              letterSpacing: "0.1em",
-            }}
-          >
-            {PROJECTS.length} selected
-          </span>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          {PROJECTS.map((p, i) => (
-            <div
-              key={p.slug}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "80px 1fr auto",
-                gap: "0 32px",
-                padding: "36px 0",
-                borderTop: i === 0 ? "1px solid var(--border)" : "none",
-                borderBottom: "1px solid var(--border)",
-                alignItems: "start",
-              }}
-            >
-              {/* Year col */}
-              <div
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 11,
-                  color: "var(--ink3)",
-                  letterSpacing: "0.06em",
-                  paddingTop: 4,
-                }}
-              >
-                {p.year}
-              </div>
-
-              {/* Main col */}
-              <div>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    marginBottom: 8,
-                  }}
-                >
-                  <StatusDot status={p.status} />
-                  <span
-                    style={{
-                      fontSize: "clamp(22px, 3vw, 36px)",
-                      fontWeight: 600,
-                      letterSpacing: "-0.01em",
-                      lineHeight: 1.1,
-                    }}
-                  >
-                    {p.title}
-                  </span>
-                </div>
-
-                <div
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 11,
-                    color: "var(--ink3)",
-                    letterSpacing: "0.06em",
-                    marginBottom: 14,
-                  }}
-                >
-                  {p.role}
-                </div>
-
-                <p
-                  style={{
-                    fontSize: 15,
-                    lineHeight: 1.65,
-                    color: "var(--ink2)",
-                    maxWidth: 620,
-                    fontWeight: 300,
-                    marginBottom: 16,
-                  }}
-                >
-                  {p.description}
-                </p>
-
-                {/* Highlight pill */}
-                <div
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    padding: "4px 12px",
-                    background: "rgba(200, 245, 60, 0.08)",
-                    border: "1px solid rgba(200, 245, 60, 0.2)",
-                    borderRadius: 4,
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 11,
-                    color: "var(--accent)",
-                    letterSpacing: "0.06em",
-                    marginBottom: 18,
-                  }}
-                >
-                  ↑ {p.highlight}
-                </div>
-
-                {/* Tech tags */}
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                  {p.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        fontSize: 10,
-                        color: "var(--ink3)",
-                        padding: "3px 9px",
-                        border: "1px solid var(--border)",
-                        borderRadius: 3,
-                        letterSpacing: "0.05em",
-                      }}
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Links col */}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 8,
-                  alignItems: "flex-end",
-                  paddingTop: 4,
-                }}
-              >
-                <a
-                  href={p.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 11,
-                    color: "var(--ink2)",
-                    letterSpacing: "0.06em",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 4,
-                    padding: "6px 12px",
-                    border: "1px solid var(--border)",
-                    borderRadius: 4,
-                    whiteSpace: "nowrap",
-                    transition: "border-color 0.15s, color 0.15s",
-                  }}
-                >
-                  Visit ↗
-                </a>
-                {p.github && (
-                  <a
-                    href={p.github}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 11,
-                      color: "var(--ink3)",
-                      letterSpacing: "0.06em",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
-                      padding: "6px 12px",
-                      border: "1px solid var(--border)",
-                      borderRadius: 4,
-                      whiteSpace: "nowrap",
-                      transition: "border-color 0.15s, color 0.15s",
-                    }}
-                  >
-                    GitHub ↗
-                  </a>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── WORK ── */}
-      <section
-        id="work"
-        style={{
-          paddingTop: 100,
-          paddingBottom: 100,
-          paddingLeft: "clamp(24px, 5vw, 80px)",
-          paddingRight: "clamp(24px, 5vw, 80px)",
-          borderBottom: "1px solid var(--border)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "baseline",
-            gap: 16,
-            marginBottom: 64,
-          }}
-        >
-          <h2
-            style={{
-              fontSize: "clamp(32px, 4vw, 52px)",
-              fontWeight: 700,
-              letterSpacing: "-0.02em",
-              lineHeight: 1,
-            }}
-          >
-            Work
-          </h2>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-          {TIMELINE.map((t, i) => (
-            <div
-              key={i}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "80px 1fr",
-                gap: "0 32px",
-                padding: "36px 0",
-                borderTop: i === 0 ? "1px solid var(--border)" : "none",
-                borderBottom: "1px solid var(--border)",
-              }}
-            >
-              <div
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 11,
-                  color: "var(--ink3)",
-                  letterSpacing: "0.06em",
-                  paddingTop: 4,
-                }}
-              >
-                {t.year}
-              </div>
-              <div>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "baseline",
-                    gap: 12,
-                    marginBottom: 8,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: "clamp(20px, 2.5vw, 30px)",
-                      fontWeight: 600,
-                      letterSpacing: "-0.01em",
-                    }}
-                  >
-                    {t.org}
-                  </span>
-                  <span
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 12,
-                      color: "var(--accent)",
-                      letterSpacing: "0.06em",
-                    }}
-                  >
-                    {t.role}
-                  </span>
-                </div>
-                <p
-                  style={{
-                    fontSize: 15,
-                    lineHeight: 1.65,
-                    color: "var(--ink2)",
-                    maxWidth: 580,
-                    fontWeight: 300,
-                  }}
-                >
-                  {t.detail}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── STACK ── */}
-      <section
-        style={{
-          paddingTop: 80,
-          paddingBottom: 80,
-          paddingLeft: "clamp(24px, 5vw, 80px)",
-          paddingRight: "clamp(24px, 5vw, 80px)",
-          borderBottom: "1px solid var(--border)",
-        }}
-      >
-        <div
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            color: "var(--ink3)",
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
-            marginBottom: 28,
-          }}
-        >
-          Stack & tools
-        </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          {[
-            "Next.js", "TypeScript", "Supabase", "Vercel", "Tailwind",
-            "Electron", "Playwright", "TipTap", "GA4", "Figma",
-            "Python", "SQLite", "Railway", "GitHub Actions",
-          ].map((s) => (
-            <span
-              key={s}
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 12,
-                color: "var(--ink2)",
-                padding: "6px 14px",
-                border: "1px solid var(--border)",
-                borderRadius: 4,
-                letterSpacing: "0.04em",
-                background: "var(--bg2)",
-              }}
-            >
-              {s}
-            </span>
-          ))}
-        </div>
-      </section>
-
-      {/* ── CONTACT ── */}
-      <section
-        id="contact"
-        style={{
-          paddingTop: 100,
-          paddingBottom: 120,
-          paddingLeft: "clamp(24px, 5vw, 80px)",
-          paddingRight: "clamp(24px, 5vw, 80px)",
-        }}
-      >
-        <h2
-          style={{
-            fontSize: "clamp(40px, 6vw, 80px)",
-            fontWeight: 700,
-            letterSpacing: "-0.02em",
-            lineHeight: 1,
-            marginBottom: 24,
-          }}
-        >
-          Let&rsquo;s talk.
-        </h2>
-        <p
-          style={{
-            fontSize: 18,
-            lineHeight: 1.65,
-            color: "var(--ink2)",
-            maxWidth: 480,
-            fontWeight: 300,
-            marginBottom: 48,
-          }}
-        >
-          Open to interesting conversations about media, AI, tools, or anything
-          else that sits at the edge of something.
-        </p>
-
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-          {[
-            { label: "Email", href: "mailto:marvin@marvinliyanage.com", mono: "marvin@marvinliyanage.com" },
-            { label: "LinkedIn", href: "https://linkedin.com/in/marvinliyanage", mono: "linkedin" },
-            { label: "GitHub", href: "https://github.com/malvidah", mono: "malvidah" },
-          ].map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              target={link.href.startsWith("http") ? "_blank" : undefined}
-              rel={link.href.startsWith("http") ? "noopener noreferrer" : undefined}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 4,
-                padding: "16px 20px",
-                border: "1px solid var(--border)",
-                borderRadius: 8,
-                background: "var(--bg2)",
-                minWidth: 160,
-                transition: "border-color 0.15s",
-                cursor: "pointer",
-              }}
-            >
-              <span
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  color: "var(--ink3)",
-                  letterSpacing: "0.12em",
-                  textTransform: "uppercase",
-                }}
-              >
-                {link.label}
-              </span>
-              <span
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 12,
-                  color: "var(--ink2)",
-                  letterSpacing: "0.04em",
-                }}
-              >
-                {link.mono} ↗
-              </span>
-            </a>
-          ))}
-        </div>
-      </section>
-
-      {/* ── FOOTER ── */}
-      <footer
-        style={{
-          padding: "20px clamp(24px, 5vw, 80px)",
-          borderTop: "1px solid var(--border)",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
-          gap: 12,
+          gap: 24,
         }}
       >
-        <span
+        <div>
+          <EditableText
+            as="h2"
+            value={about.contact_heading ?? FALLBACK_ABOUT.contact_heading}
+            isAdmin={isAdmin}
+            onSave={(v) => saveAbout("contact_heading", v)}
+            style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(28px, 4vw, 48px)", fontWeight: 700, fontStyle: "italic", lineHeight: 1.1 }}
+          />
+          <EditableText
+            as="p"
+            value={about.contact_body ?? FALLBACK_ABOUT.contact_body}
+            isAdmin={isAdmin}
+            onSave={(v) => saveAbout("contact_body", v)}
+            multiline
+            style={{ fontFamily: "var(--font-sans)", fontSize: 15, color: "var(--ink2)", marginTop: 8, maxWidth: 440 }}
+          />
+        </div>
+        <a
+          href="mailto:marvin@marvinliyanage.com"
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            color: "var(--ink3)",
-            letterSpacing: "0.06em",
+            fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 600,
+            letterSpacing: "0.06em", textTransform: "uppercase",
+            color: "#fff", background: "var(--ink)", padding: "14px 32px", borderRadius: 8,
           }}
         >
-          © 2026 Marvin Liyanage
+          Get in touch
+        </a>
+      </section>
+
+      {/* ═══ FOOTER ═══ */}
+      <footer style={{ padding: "20px 32px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ink3)" }}>
+          &copy; 2026 Marvin Liyanage
         </span>
-        <span
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            color: "var(--ink3)",
-            letterSpacing: "0.06em",
-          }}
-        >
-          Built with Next.js · Deployed on Vercel
-        </span>
+        <div style={{ display: "flex", gap: 20 }}>
+          {LINKS.map((l) => (
+            <a key={l.label} href={l.href}
+              target={l.href.startsWith("http") ? "_blank" : undefined}
+              rel={l.href.startsWith("http") ? "noopener noreferrer" : undefined}
+              className="link-underline"
+              style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ink3)" }}>
+              {l.label}
+            </a>
+          ))}
+        </div>
       </footer>
+
+      <EditBar />
     </main>
   )
 }

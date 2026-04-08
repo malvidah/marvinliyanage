@@ -9,13 +9,14 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        display: ["var(--font-fraunces)", "Georgia", "serif"],
-        mono: ["var(--font-mono)", "'Courier New'", "monospace"],
+        serif: ["var(--font-serif)", "Georgia", "serif"],
+        sans: ["var(--font-sans)", "-apple-system", "sans-serif"],
+        display: ["var(--font-display)", "sans-serif"],
       },
       colors: {
-        bg: "#0C0B09",
-        ink: "#F0EBE1",
-        accent: "#C8F53C",
+        bg: "#FFFFFF",
+        "bg-alt": "#F5F5F0",
+        ink: "#1A1A1A",
       },
     },
   },

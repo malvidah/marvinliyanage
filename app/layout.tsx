@@ -1,25 +1,12 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Fraunces, Fragment_Mono } from "next/font/google"
+import AuthProvider from "./components/AuthProvider"
 import "./globals.css"
-
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  variable: "--font-fraunces",
-  weight: ["300", "400", "500", "600", "700", "900"],
-  style: ["normal", "italic"],
-})
-
-const fragmentMono = Fragment_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-  weight: "400",
-})
 
 export const metadata: Metadata = {
   title: "Marvin Liyanage",
   description:
-    "Editorial Social Strategy Lead at Big Think. Builder of Day Lab and Audian. Based in San Francisco → Portland.",
+    "Editorial Social Strategy Lead at Big Think. Builder of Day Lab and Audian. Based in San Francisco and Portland.",
   openGraph: {
     title: "Marvin Liyanage",
     description:
@@ -35,8 +22,22 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${fragmentMono.variable}`}>
-      <body>{children}</body>
+    <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Oswald:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body>
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   )
 }
