@@ -49,6 +49,7 @@ const FALLBACK_ENTRIES: Entry[] = [
 const FALLBACK_ABOUT: AboutMap = {
   about_1: "I lead social strategy at Big Think, produce the Curiosity Lab video series, and build software tools for my own work — including a life OS and a social analytics platform.",
   about_2: "I think a lot about media, attention, and what it means to make something worth watching.",
+  skills: "Content Strategy, Product Design, Full-Stack Engineering, Video Production, Data Analysis",
   contact_heading: "Let\u2019s talk.",
   contact_body: "Open to interesting conversations about media, AI, tools, or anything else that sits at the edge of something.",
 }
@@ -88,7 +89,7 @@ export default function Home() {
   const entry = entries[activeIndex] ?? entries[0]
 
   const saveEntryField = useCallback(
-    (slug: string, field: string, value: string) => {
+    (slug: string, field: string, value: string | string[]) => {
       fetch("/api/content", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -205,13 +206,24 @@ export default function Home() {
             />
 
             <div style={{ fontFamily: "var(--font-display)", fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 14 }}>
-              CAPABILITIES
+              SKILLS
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 32 }}>
-              {["Content Strategy", "Product Design", "Full-Stack Engineering", "Video Production", "Data Analysis"].map((s) => (
-                <span key={s} style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--ink2)" }}>{s}</span>
-              ))}
-            </div>
+            {isAdmin ? (
+              <EditableText
+                as="div"
+                value={about.skills ?? FALLBACK_ABOUT.skills}
+                isAdmin={isAdmin}
+                onSave={(v) => saveAbout("skills", v)}
+                multiline
+                style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--ink2)", lineHeight: 1.8, marginBottom: 32 }}
+              />
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 32 }}>
+                {(about.skills ?? FALLBACK_ABOUT.skills).split(",").map((s) => (
+                  <span key={s} style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--ink2)" }}>{s.trim()}</span>
+                ))}
+              </div>
+            )}
           </div>
 
           <div style={{ marginTop: 32 }}>
@@ -359,12 +371,27 @@ export default function Home() {
             />
           )}
 
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 28 }}>
-            {entry.tags.map((tag) => (
-              <span key={tag} style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ink3)", padding: "4px 10px", border: "1px solid var(--border)", borderRadius: 4 }}>
-                {tag}
-              </span>
-            ))}
+          <div style={{ marginBottom: 28 }}>
+            {isAdmin ? (
+              <EditableText
+                as="div"
+                value={entry.tags.join(", ")}
+                isAdmin={isAdmin}
+                onSave={(v) => {
+                  const tags = v.replace(/<[^>]+>/g, "").split(",").map((t) => t.trim()).filter(Boolean)
+                  saveEntryField(entry.slug, "tags", tags)
+                }}
+                style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ink3)" }}
+              />
+            ) : (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {entry.tags.map((tag) => (
+                  <span key={tag} style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ink3)", padding: "4px 10px", border: "1px solid var(--border)", borderRadius: 4 }}>
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
