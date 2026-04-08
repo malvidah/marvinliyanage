@@ -201,14 +201,6 @@ export default function Home() {
               isAdmin={isAdmin}
               onSave={(v) => saveAbout("about_1", v)}
               multiline
-              style={{ fontFamily: "var(--font-serif)", fontSize: 15, lineHeight: 1.7, color: "var(--ink2)", marginBottom: 28 }}
-            />
-            <EditableText
-              as="p"
-              value={about.about_2 ?? FALLBACK_ABOUT.about_2}
-              isAdmin={isAdmin}
-              onSave={(v) => saveAbout("about_2", v)}
-              multiline
               style={{ fontFamily: "var(--font-serif)", fontSize: 15, lineHeight: 1.7, color: "var(--ink2)", marginBottom: 32 }}
             />
 

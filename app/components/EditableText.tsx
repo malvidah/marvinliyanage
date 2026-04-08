@@ -27,7 +27,7 @@ export default function EditableText({
 
   const handleBlur = useCallback(() => {
     setEditing(false)
-    const newVal = ref.current?.innerText?.trim() ?? ""
+    const newVal = ref.current?.innerHTML?.trim() ?? ""
     if (newVal && newVal !== value) {
       onSave(newVal)
     }
@@ -64,8 +64,9 @@ export default function EditableText({
       onMouseLeave={() => setHovered(false)}
       style={{ ...style, ...adminStyles, transition: "outline 0.15s" }}
       className={className}
+      dangerouslySetInnerHTML={!editing ? { __html: value } : undefined}
     >
-      {value}
+      {editing ? undefined : null}
     </Tag>
   )
 }
