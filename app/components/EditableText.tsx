@@ -49,7 +49,7 @@ export default function EditableText({
 
   const adminStyles: React.CSSProperties =
     isAdmin
-      ? { cursor: "text" }
+      ? { cursor: "text", outline: "none" }
       : {}
 
   return (
