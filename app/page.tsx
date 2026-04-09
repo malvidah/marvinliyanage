@@ -70,8 +70,8 @@ const STACK = [
 
 export default function Home() {
   const { isAdmin } = useAdmin()
-  const [entries, setEntries] = useState<Entry[]>(FALLBACK_ENTRIES)
-  const [about, setAbout] = useState<AboutMap>(FALLBACK_ABOUT)
+  const [entries, setEntries] = useState<Entry[]>([])
+  const [about, setAbout] = useState<AboutMap>({})
   const [activeIndex, setActiveIndex] = useState(0)
   const [loaded, setLoaded] = useState(false)
 
@@ -79,11 +79,15 @@ export default function Home() {
     fetch("/api/content")
       .then((r) => r.json())
       .then((data) => {
-        if (data.entries?.length) setEntries(data.entries)
-        if (data.about && Object.keys(data.about).length) setAbout(data.about)
+        setEntries(data.entries?.length ? data.entries : FALLBACK_ENTRIES)
+        setAbout(data.about && Object.keys(data.about).length ? data.about : FALLBACK_ABOUT)
         setLoaded(true)
       })
-      .catch(() => setLoaded(true))
+      .catch(() => {
+        setEntries(FALLBACK_ENTRIES)
+        setAbout(FALLBACK_ABOUT)
+        setLoaded(true)
+      })
   }, [])
 
   const entry = entries[activeIndex] ?? entries[0]
@@ -124,7 +128,7 @@ export default function Home() {
   )
 
   return (
-    <main style={{ minHeight: "100vh" }}>
+    <main style={{ minHeight: "100vh", opacity: loaded ? 1 : 0, transition: "opacity 0.2s ease" }}>
       {/* ═══ HEADER ═══ */}
       <header
         className="header-bar"
