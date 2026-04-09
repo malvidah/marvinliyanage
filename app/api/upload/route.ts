@@ -35,14 +35,18 @@ export async function POST(req: NextRequest) {
   const { data: urlData } = sb.storage.from("site-images").getPublicUrl(path)
   const imageUrl = urlData.publicUrl
 
-  // Update entry
-  const { error: updateError } = await sb
-    .from("site_entries")
-    .update({ image_url: imageUrl, updated_at: new Date().toISOString() })
-    .eq("slug", slug)
-
-  if (updateError) {
-    return NextResponse.json({ error: updateError.message }, { status: 500 })
+  // Update entry or about (profile image)
+  if (slug === "profile") {
+    const { error: updateError } = await sb
+      .from("site_about")
+      .upsert({ key: "profile_image", value: imageUrl }, { onConflict: "key" })
+    if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 })
+  } else {
+    const { error: updateError } = await sb
+      .from("site_entries")
+      .update({ image_url: imageUrl, updated_at: new Date().toISOString() })
+      .eq("slug", slug)
+    if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 })
   }
 
   return NextResponse.json({ imageUrl })

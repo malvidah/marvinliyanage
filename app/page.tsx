@@ -242,6 +242,24 @@ export default function Home() {
           }}
         >
           <div>
+            {/* Profile image — bleeds to panel edges */}
+            <EditableImage
+              slug="profile"
+              imageUrl={about.profile_image ?? null}
+              gradientClass="gradient-card-1"
+              title=""
+              isAdmin={isAdmin}
+              onUploaded={(url) => setAbout((prev) => ({ ...prev, profile_image: url }))}
+              style={{
+                marginTop: -32,
+                marginLeft: -28,
+                marginRight: -28,
+                marginBottom: 28,
+                aspectRatio: "1 / 1",
+                borderRadius: 0,
+              }}
+            />
+
             <div style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 24 }}>
               ABOUT
             </div>
