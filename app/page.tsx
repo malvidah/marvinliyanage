@@ -106,6 +106,19 @@ export default function Home() {
     []
   )
 
+  const deleteEntry = useCallback((slug: string) => {
+    fetch("/api/content", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slug }),
+    })
+    setEntries((prev) => {
+      const next = prev.filter((e) => e.slug !== slug)
+      setActiveIndex((i) => Math.min(i, next.length - 1))
+      return next
+    })
+  }, [])
+
   const saveAbout = useCallback(
     (key: string, value: string) => {
       fetch("/api/content", {
@@ -298,6 +311,17 @@ export default function Home() {
                     />
                   </div>
                 </div>
+                {isAdmin && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); deleteEntry(p.slug) }}
+                    style={{
+                      background: "none", border: "none", cursor: "pointer",
+                      color: "var(--ink3)", fontSize: 16, lineHeight: 1,
+                      padding: "2px 6px", flexShrink: 0, opacity: 0.4,
+                    }}
+                    title="Delete entry"
+                  >×</button>
+                )}
                 <span
                   style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ink3)", whiteSpace: "nowrap", flexShrink: 0 }}
                 >

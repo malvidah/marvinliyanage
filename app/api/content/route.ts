@@ -55,3 +55,15 @@ export async function PATCH(req: NextRequest) {
 
   return NextResponse.json({ ok: true })
 }
+
+// DELETE: remove an entry (auth required)
+export async function DELETE(req: NextRequest) {
+  if (!(await isAuthed())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+  const { slug } = await req.json()
+  const sb = getServiceClient()
+  const { error } = await sb.from("site_entries").delete().eq("slug", slug)
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ ok: true })
+}

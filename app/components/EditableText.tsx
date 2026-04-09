@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useCallback, useLayoutEffect } from "react"
+import { useRef, useCallback } from "react"
 
 type Props = {
   value: string
@@ -22,30 +22,8 @@ export default function EditableText({
   multiline = false,
 }: Props) {
   const ref = useRef<HTMLElement>(null)
-  const isEditing = useRef(false)
-
-  // Sync innerHTML from value, but never interrupt the user while they're typing
-  useLayoutEffect(() => {
-    if (ref.current && !isEditing.current) {
-      ref.current.innerHTML = value
-    }
-  }, [value])
-
-  const handleFocus = useCallback(() => {
-    isEditing.current = true
-    // move cursor to end
-    const el = ref.current
-    if (!el) return
-    const range = document.createRange()
-    const sel = window.getSelection()
-    range.selectNodeContents(el)
-    range.collapse(false)
-    sel?.removeAllRanges()
-    sel?.addRange(range)
-  }, [])
 
   const handleBlur = useCallback(() => {
-    isEditing.current = false
     const newVal = ref.current?.innerHTML?.trim() ?? ""
     if (newVal !== value) onSave(newVal)
   }, [value, onSave])
@@ -58,7 +36,6 @@ export default function EditableText({
       }
       if (e.key === "Escape") {
         if (ref.current) ref.current.innerHTML = value
-        isEditing.current = false
         ref.current?.blur()
       }
     },
@@ -70,10 +47,10 @@ export default function EditableText({
       ref={ref as any}
       contentEditable={isAdmin}
       suppressContentEditableWarning
-      onFocus={isAdmin ? handleFocus : undefined}
+      dangerouslySetInnerHTML={{ __html: value }}
       onBlur={isAdmin ? handleBlur : undefined}
       onKeyDown={isAdmin ? handleKeyDown : undefined}
-      onClick={isAdmin ? (e) => e.stopPropagation() : undefined}
+      onClick={isAdmin ? (e: React.MouseEvent) => e.stopPropagation() : undefined}
       style={{
         ...style,
         ...(isAdmin ? { cursor: "text", outline: "none" } : {}),
