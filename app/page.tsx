@@ -352,10 +352,15 @@ export default function Home() {
                       }}
                     />
                     <EditableText
-                      value={p.org}
+                      value={p.role}
                       isAdmin={isAdmin}
-                      onSave={(v) => saveEntryField(p.slug, "org", v)}
-                      style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ink3)", marginTop: 2, display: "block" }}
+                      onSave={(v) => saveEntryField(p.slug, "role", v)}
+                      style={{
+                        fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ink3)",
+                        marginTop: 2, display: "block",
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                        maxWidth: "220px",
+                      }}
                     />
                   </div>
                 </div>
