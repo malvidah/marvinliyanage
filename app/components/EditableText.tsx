@@ -24,10 +24,16 @@ export default function EditableText({
   const ref = useRef<HTMLElement>(null)
   const [editing, setEditing] = useState(false)
 
-  // When editing starts, restore content and move cursor to end
+  // Sync innerHTML from value when NOT editing (React never touches innerHTML directly)
+  useEffect(() => {
+    if (!editing && ref.current) {
+      ref.current.innerHTML = value
+    }
+  }, [value, editing])
+
+  // When editing starts: focus + move cursor to end
   useEffect(() => {
     if (editing && ref.current) {
-      ref.current.innerHTML = value
       ref.current.focus()
       const range = document.createRange()
       const sel = window.getSelection()
@@ -37,6 +43,16 @@ export default function EditableText({
       sel?.addRange(range)
     }
   }, [editing])
+
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (isAdmin && !editing) {
+        e.stopPropagation()
+        setEditing(true)
+      }
+    },
+    [isAdmin, editing]
+  )
 
   const handleBlur = useCallback(() => {
     setEditing(false)
@@ -65,12 +81,11 @@ export default function EditableText({
       ref={ref as any}
       contentEditable={isAdmin && editing}
       suppressContentEditableWarning
-      onClick={() => isAdmin && !editing && setEditing(true)}
+      onClick={handleClick}
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
       style={{ ...style, ...(isAdmin ? { cursor: "text", outline: "none" } : {}) }}
       className={className}
-      dangerouslySetInnerHTML={!editing ? { __html: value } : undefined}
     />
   )
 }
