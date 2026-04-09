@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState, useCallback } from "react"
+import { useRef, useState, useCallback, useEffect } from "react"
 
 type Props = {
   value: string
@@ -23,7 +23,20 @@ export default function EditableText({
 }: Props) {
   const ref = useRef<HTMLElement>(null)
   const [editing, setEditing] = useState(false)
-  const [hovered, setHovered] = useState(false)
+
+  // When editing starts, restore content and move cursor to end
+  useEffect(() => {
+    if (editing && ref.current) {
+      ref.current.innerHTML = value
+      ref.current.focus()
+      const range = document.createRange()
+      const sel = window.getSelection()
+      range.selectNodeContents(ref.current)
+      range.collapse(false)
+      sel?.removeAllRanges()
+      sel?.addRange(range)
+    }
+  }, [editing])
 
   const handleBlur = useCallback(() => {
     setEditing(false)
@@ -40,33 +53,24 @@ export default function EditableText({
         ref.current?.blur()
       }
       if (e.key === "Escape") {
-        if (ref.current) ref.current.innerText = value
+        if (ref.current) ref.current.innerHTML = value
         ref.current?.blur()
       }
     },
     [value, multiline]
   )
 
-  const adminStyles: React.CSSProperties =
-    isAdmin
-      ? { cursor: "text", outline: "none" }
-      : {}
-
   return (
     <Tag
       ref={ref as any}
       contentEditable={isAdmin && editing}
       suppressContentEditableWarning
-      onClick={() => isAdmin && setEditing(true)}
+      onClick={() => isAdmin && !editing && setEditing(true)}
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{ ...style, ...adminStyles, transition: "outline 0.15s" }}
+      style={{ ...style, ...(isAdmin ? { cursor: "text", outline: "none" } : {}) }}
       className={className}
       dangerouslySetInnerHTML={!editing ? { __html: value } : undefined}
-    >
-      {editing ? undefined : null}
-    </Tag>
+    />
   )
 }
