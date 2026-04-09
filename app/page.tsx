@@ -114,8 +114,40 @@ export default function Home() {
     })
     setEntries((prev) => {
       const next = prev.filter((e) => e.slug !== slug)
-      setActiveIndex((i) => Math.min(i, next.length - 1))
+      setActiveIndex((i) => Math.min(i, Math.max(0, next.length - 1)))
       return next
+    })
+  }, [])
+
+  const addEntry = useCallback(async () => {
+    const slug = `new-entry-${Date.now()}`
+    const newEntry = {
+      slug,
+      title: "NEW PROJECT",
+      org: "Category",
+      date: "2026",
+      url: null,
+      github: null,
+      role: "Role",
+      tags: [],
+      status: "past",
+      gradient: "gradient-card-1",
+      description: "Add a description.",
+      highlight: null,
+      entry_type: "project",
+      image_url: null,
+      sort_order: 999,
+    }
+    const res = await fetch("/api/content", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newEntry),
+    })
+    const data = await res.json()
+    const created = data.entry ?? { ...newEntry, id: Date.now() }
+    setEntries((prev) => {
+      setActiveIndex(prev.length)
+      return [...prev, created]
     })
   }, [])
 
@@ -262,10 +294,22 @@ export default function Home() {
           className="panel-mid"
           style={{ borderRight: "1px solid var(--border)", display: "flex", flexDirection: "column" }}
         >
-          <div style={{ padding: "32px 28px 16px" }}>
+          <div style={{ padding: "32px 28px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>
               PROJECTS
             </span>
+            {isAdmin && (
+              <button
+                onClick={addEntry}
+                style={{
+                  background: "none", border: "1px solid var(--border)", borderRadius: 4,
+                  width: 22, height: 22, cursor: "pointer", display: "flex",
+                  alignItems: "center", justifyContent: "center",
+                  fontSize: 16, color: "var(--ink3)", lineHeight: 1,
+                }}
+                title="Add project"
+              >+</button>
+            )}
           </div>
 
           <div style={{ flex: 1, overflow: "auto" }}>
@@ -295,7 +339,11 @@ export default function Home() {
                     <EditableText
                       value={p.title}
                       isAdmin={isAdmin}
-                      onSave={(v) => saveEntryField(p.slug, "title", v)}
+                      onSave={(v) => {
+                        const plain = v.replace(/<[^>]+>/g, "").trim()
+                        if (!plain) deleteEntry(p.slug)
+                        else saveEntryField(p.slug, "title", v)
+                      }}
                       style={{
                         fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 700,
                         letterSpacing: "0.03em", textTransform: "uppercase",
@@ -311,17 +359,6 @@ export default function Home() {
                     />
                   </div>
                 </div>
-                {isAdmin && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); deleteEntry(p.slug) }}
-                    style={{
-                      background: "none", border: "none", cursor: "pointer",
-                      color: "var(--ink3)", fontSize: 16, lineHeight: 1,
-                      padding: "2px 6px", flexShrink: 0, opacity: 0.4,
-                    }}
-                    title="Delete entry"
-                  >×</button>
-                )}
                 <span
                   style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ink3)", whiteSpace: "nowrap", flexShrink: 0 }}
                 >

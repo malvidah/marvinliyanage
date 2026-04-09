@@ -56,6 +56,18 @@ export async function PATCH(req: NextRequest) {
   return NextResponse.json({ ok: true })
 }
 
+// POST: create a new entry (auth required)
+export async function POST(req: NextRequest) {
+  if (!(await isAuthed())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+  const body = await req.json()
+  const sb = getServiceClient()
+  const { data, error } = await sb.from("site_entries").insert(body).select().single()
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ entry: data })
+}
+
 // DELETE: remove an entry (auth required)
 export async function DELETE(req: NextRequest) {
   if (!(await isAuthed())) {
