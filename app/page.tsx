@@ -90,7 +90,7 @@ export default function Home() {
       })
   }, [])
 
-  const entry = entries[activeIndex] ?? entries[0]
+  const entry = entries[activeIndex] ?? entries[0] ?? null
 
   const saveEntryField = useCallback(
     (slug: string, field: string, value: string | string[]) => {
@@ -374,6 +374,7 @@ export default function Home() {
           <div style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 24 }}>
             PROJECT DETAIL
           </div>
+          {!entry ? null : (<>
 
           <EditableImage
             slug={entry.slug}
@@ -473,6 +474,7 @@ export default function Home() {
               </a>
             )}
           </div>
+          </>)}
         </div>
       </div>
 
