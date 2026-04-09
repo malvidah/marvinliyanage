@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState, useCallback, useEffect } from "react"
+import { useRef, useState, useCallback, useLayoutEffect } from "react"
 
 type Props = {
   value: string
@@ -21,70 +21,74 @@ export default function EditableText({
   className,
   multiline = false,
 }: Props) {
-  const ref = useRef<HTMLElement>(null)
+  const editRef = useRef<HTMLElement>(null)
   const [editing, setEditing] = useState(false)
 
-  // Sync innerHTML from value when NOT editing (React never touches innerHTML directly)
-  useEffect(() => {
-    if (!editing && ref.current) {
-      ref.current.innerHTML = value
-    }
-  }, [value, editing])
-
-  // When editing starts: focus + move cursor to end
-  useEffect(() => {
-    if (editing && ref.current) {
-      ref.current.focus()
+  // useLayoutEffect fires synchronously before paint — populate content before user sees it
+  useLayoutEffect(() => {
+    if (editing && editRef.current) {
+      editRef.current.innerHTML = value
+      editRef.current.focus()
       const range = document.createRange()
       const sel = window.getSelection()
-      range.selectNodeContents(ref.current)
+      range.selectNodeContents(editRef.current)
       range.collapse(false)
       sel?.removeAllRanges()
       sel?.addRange(range)
     }
   }, [editing])
 
-  const handleClick = useCallback(
-    (e: React.MouseEvent) => {
-      if (isAdmin && !editing) {
-        e.stopPropagation()
-        setEditing(true)
-      }
-    },
-    [isAdmin, editing]
-  )
-
   const handleBlur = useCallback(() => {
+    const newVal = editRef.current?.innerHTML?.trim() ?? ""
     setEditing(false)
-    const newVal = ref.current?.innerHTML?.trim() ?? ""
-    if (newVal && newVal !== value) {
-      onSave(newVal)
-    }
+    if (newVal && newVal !== value) onSave(newVal)
   }, [value, onSave])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "Enter" && !multiline) {
         e.preventDefault()
-        ref.current?.blur()
+        editRef.current?.blur()
       }
       if (e.key === "Escape") {
-        if (ref.current) ref.current.innerHTML = value
-        ref.current?.blur()
+        if (editRef.current) editRef.current.innerHTML = value
+        editRef.current?.blur()
       }
     },
     [value, multiline]
   )
 
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (isAdmin) {
+        e.stopPropagation()
+        setEditing(true)
+      }
+    },
+    [isAdmin]
+  )
+
+  // Editing: a fresh element React hasn't touched yet — useLayoutEffect populates it
+  if (editing) {
+    return (
+      <Tag
+        ref={editRef as any}
+        contentEditable
+        suppressContentEditableWarning
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        style={{ ...style, outline: "none", cursor: "text" }}
+        className={className}
+      />
+    )
+  }
+
+  // Display: React controls this via dangerouslySetInnerHTML
   return (
     <Tag
-      ref={ref as any}
-      contentEditable={isAdmin && editing}
-      suppressContentEditableWarning
+      dangerouslySetInnerHTML={{ __html: value }}
       onClick={handleClick}
-      onBlur={handleBlur}
-      onKeyDown={handleKeyDown}
-      style={{ ...style, ...(isAdmin ? { cursor: "text", outline: "none" } : {}) }}
+      style={{ ...style, ...(isAdmin ? { cursor: "text" } : {}) }}
       className={className}
     />
   )
