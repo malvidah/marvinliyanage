@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useCallback } from "react"
+import { useRef, useEffect } from "react"
 
 type Props = {
   value: string
@@ -22,39 +22,63 @@ export default function EditableText({
   multiline = false,
 }: Props) {
   const ref = useRef<HTMLElement>(null)
+  // Keep a ref to latest value so callbacks never have stale closures
+  const valueRef = useRef(value)
+  useEffect(() => { valueRef.current = value }, [value])
 
-  const handleBlur = useCallback(() => {
-    const newVal = ref.current?.innerHTML?.trim() ?? ""
-    if (newVal !== value) onSave(newVal)
-  }, [value, onSave])
+  // Sync display content when value changes and user is not editing
+  useEffect(() => {
+    const el = ref.current
+    if (el && !el.hasAttribute("contenteditable")) {
+      el.innerHTML = value
+    }
+  }, [value])
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === "Enter" && !multiline) {
-        e.preventDefault()
-        ref.current?.blur()
-      }
-      if (e.key === "Escape") {
-        if (ref.current) ref.current.innerHTML = value
-        ref.current?.blur()
-      }
-    },
-    [value, multiline]
-  )
+  function startEditing(e: React.MouseEvent) {
+    if (!isAdmin) return
+    e.stopPropagation()
+    const el = ref.current
+    if (!el || el.hasAttribute("contenteditable")) return
+    el.setAttribute("contenteditable", "true")
+    el.style.outline = "none"
+    el.focus()
+    // cursor to end
+    const range = document.createRange()
+    const sel = window.getSelection()
+    range.selectNodeContents(el)
+    range.collapse(false)
+    sel?.removeAllRanges()
+    sel?.addRange(range)
+  }
+
+  function stopEditing() {
+    const el = ref.current
+    if (!el) return
+    el.removeAttribute("contenteditable")
+    const newVal = el.innerHTML.trim()
+    if (newVal !== valueRef.current) onSave(newVal)
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter" && !multiline) {
+      e.preventDefault()
+      ref.current?.blur()
+    }
+    if (e.key === "Escape") {
+      if (ref.current) ref.current.innerHTML = valueRef.current
+      ref.current?.blur()
+    }
+  }
 
   return (
     <Tag
       ref={ref as any}
-      contentEditable={isAdmin}
-      suppressContentEditableWarning
       dangerouslySetInnerHTML={{ __html: value }}
-      onBlur={isAdmin ? handleBlur : undefined}
-      onKeyDown={isAdmin ? handleKeyDown : undefined}
-      onClick={isAdmin ? (e: React.MouseEvent) => e.stopPropagation() : undefined}
-      style={{
-        ...style,
-        ...(isAdmin ? { cursor: "text", outline: "none" } : {}),
-      }}
+      suppressContentEditableWarning
+      onClick={startEditing}
+      onBlur={stopEditing}
+      onKeyDown={handleKeyDown}
+      style={{ ...style, ...(isAdmin ? { cursor: "text" } : {}) }}
       className={className}
     />
   )
