@@ -27,13 +27,31 @@ export default function EditableImage({
   const [hovered, setHovered] = useState(false)
   const [uploading, setUploading] = useState(false)
 
+  const compressImage = (file: File): Promise<Blob> =>
+    new Promise((resolve) => {
+      const img = new Image()
+      img.onload = () => {
+        const MAX = 1200
+        const scale = Math.min(1, MAX / Math.max(img.width, img.height))
+        const w = Math.round(img.width * scale)
+        const h = Math.round(img.height * scale)
+        const canvas = document.createElement("canvas")
+        canvas.width = w
+        canvas.height = h
+        canvas.getContext("2d")!.drawImage(img, 0, 0, w, h)
+        canvas.toBlob((blob) => resolve(blob ?? file), "image/jpeg", 0.82)
+      }
+      img.src = URL.createObjectURL(file)
+    })
+
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
     setUploading(true)
+    const compressed = await compressImage(file)
     const form = new FormData()
-    form.append("file", file)
+    form.append("file", compressed, `${slug}.jpg`)
     form.append("slug", slug)
 
     try {
