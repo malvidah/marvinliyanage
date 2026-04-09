@@ -387,7 +387,7 @@ export default function Home() {
                   <span
                     style={{
                       width: 7, height: 7, borderRadius: "50%",
-                      background: p.status === "live" ? "#22C55E" : p.status === "ongoing" ? "#F59E0B" : "var(--border-dark)",
+                      background: p.date?.includes("Present") ? "#22C55E" : "var(--border-dark)",
                       display: "inline-block", flexShrink: 0,
                     }}
                   />
