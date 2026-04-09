@@ -28,6 +28,43 @@ type Entry = {
 
 type AboutMap = Record<string, string>
 
+/* ─── URL INPUT ─── */
+
+function UrlInput({ label, value, onSave }: { label: string; value: string; onSave: (v: string) => void }) {
+  const [val, setVal] = useState(value)
+  const [focused, setFocused] = useState(false)
+  useEffect(() => { setVal(value) }, [value])
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: "var(--ink3)", flexShrink: 0 }}>
+        <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+        <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+      </svg>
+      <input
+        value={val}
+        onChange={(e) => setVal(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => { setFocused(false); onSave(val.trim()) }}
+        onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur() }}
+        placeholder={label}
+        style={{
+          fontFamily: "var(--font-sans)",
+          fontSize: 11,
+          color: "var(--ink3)",
+          background: "none",
+          border: "none",
+          borderBottom: focused ? "1px solid var(--ink3)" : "1px solid transparent",
+          outline: "none",
+          width: "100%",
+          padding: "1px 0",
+          transition: "border-color 0.15s",
+        }}
+      />
+    </div>
+  )
+}
+
 /* ─── FALLBACK DATA ─── */
 const FALLBACK_ENTRIES: Entry[] = [
   { id:1, slug:"big-think", title:"BIG THINK", org:"Media & Strategy", date:"2022 – Present", url:"https://bigthink.com", github:null, role:"Social Strategy Lead (2026 – Present) · Editorial Social Media Manager (2024 – 2026)", tags:["Content Strategy","Video Editing","Social Media","Analytics","GA4"], status:"live", gradient:"gradient-card-1", description:"Own cross-platform content strategy across Instagram, YouTube, and LinkedIn. Produce original video series, manage data pipelines from GA4 to membership revenue attribution. Previously managed editorial social presence, developed content calendars, audience growth strategies, and analytics reporting.", highlight:null, entry_type:"role", image_url:null, sort_order:0 },
@@ -52,6 +89,7 @@ const FALLBACK_ABOUT: AboutMap = {
   skills: "Content Strategy, Product Design, Full-Stack Engineering, Video Production, Data Analysis",
   contact_heading: "Let\u2019s talk.",
   contact_body: "Open to interesting conversations about media, AI, tools, or anything else that sits at the edge of something.",
+  contact_email: "marvin.liyanage@gmail.com",
 }
 
 const LINKS = [
@@ -382,11 +420,12 @@ export default function Home() {
                     />
                   </div>
                 </div>
-                <span
+                <EditableText
+                  value={p.date}
+                  isAdmin={isAdmin}
+                  onSave={(v) => saveEntryField(p.slug, "date", v)}
                   style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ink3)", whiteSpace: "nowrap", flexShrink: 0 }}
-                >
-                  {p.date}
-                </span>
+                />
               </div>
             ))}
           </div>
@@ -483,18 +522,36 @@ export default function Home() {
             )}
           </div>
 
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            {entry.url && (
-              <a href={entry.url} target="_blank" rel="noopener noreferrer"
-                style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#fff", background: "var(--ink)", padding: "10px 24px", borderRadius: 8 }}>
-                Visit
-              </a>
-            )}
-            {entry.github && (
-              <a href={entry.github} target="_blank" rel="noopener noreferrer"
-                style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink)", border: "1px solid var(--border-dark)", padding: "10px 24px", borderRadius: 8 }}>
-                GitHub
-              </a>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              {(entry.url || isAdmin) && (
+                <a href={entry.url ?? "#"} onClick={isAdmin ? (e) => e.preventDefault() : undefined}
+                  target="_blank" rel="noopener noreferrer"
+                  style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#fff", background: "var(--ink)", padding: "10px 24px", borderRadius: 8, opacity: isAdmin && !entry.url ? 0.4 : 1 }}>
+                  Visit
+                </a>
+              )}
+              {(entry.github || isAdmin) && (
+                <a href={entry.github ?? "#"} onClick={isAdmin ? (e) => e.preventDefault() : undefined}
+                  target="_blank" rel="noopener noreferrer"
+                  style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink)", border: "1px solid var(--border-dark)", padding: "10px 24px", borderRadius: 8, opacity: isAdmin && !entry.github ? 0.4 : 1 }}>
+                  GitHub
+                </a>
+              )}
+            </div>
+            {isAdmin && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <UrlInput
+                  label="Visit URL (also used for image click)"
+                  value={entry.url ?? ""}
+                  onSave={(v) => saveEntryField(entry.slug, "url", v || null as any)}
+                />
+                <UrlInput
+                  label="GitHub URL"
+                  value={entry.github ?? ""}
+                  onSave={(v) => saveEntryField(entry.slug, "github", v || null as any)}
+                />
+              </div>
             )}
           </div>
           </>)}
@@ -531,16 +588,26 @@ export default function Home() {
             style={{ fontFamily: "var(--font-sans)", fontSize: 15, color: "var(--ink2)", marginTop: 8, maxWidth: 440 }}
           />
         </div>
-        <a
-          href="mailto:marvin.liyanage@gmail.com"
-          style={{
-            fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 600,
-            letterSpacing: "0.06em", textTransform: "uppercase",
-            color: "#fff", background: "var(--ink)", padding: "14px 32px", borderRadius: 8,
-          }}
-        >
-          Get in touch
-        </a>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
+          <a
+            href={`mailto:${about.contact_email ?? FALLBACK_ABOUT.contact_email}`}
+            onClick={isAdmin ? (e) => e.preventDefault() : undefined}
+            style={{
+              fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 600,
+              letterSpacing: "0.06em", textTransform: "uppercase",
+              color: "#fff", background: "var(--ink)", padding: "14px 32px", borderRadius: 8,
+            }}
+          >
+            Get in touch
+          </a>
+          {isAdmin && (
+            <UrlInput
+              label="Email address"
+              value={about.contact_email ?? FALLBACK_ABOUT.contact_email ?? ""}
+              onSave={(v) => saveAbout("contact_email", v)}
+            />
+          )}
+        </div>
       </section>
 
       {/* ═══ FOOTER ═══ */}
