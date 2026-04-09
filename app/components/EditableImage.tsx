@@ -62,6 +62,8 @@ export default function EditableImage({
       console.error("Upload failed:", err)
     } finally {
       setUploading(false)
+      // Reset so the same file can be re-selected and onChange fires next time
+      if (inputRef.current) inputRef.current.value = ""
     }
   }
 
