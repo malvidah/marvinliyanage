@@ -57,7 +57,7 @@ const FALLBACK_ABOUT: AboutMap = {
 const LINKS = [
   { label: "GitHub", href: "https://github.com/malvidah" },
   { label: "LinkedIn", href: "https://linkedin.com/in/marvinliyanage" },
-  { label: "Email", href: "mailto:marvin@marvinliyanage.com" },
+  { label: "Email", href: "mailto:marvin.liyanage@gmail.com" },
 ]
 
 const STACK = [
@@ -532,7 +532,7 @@ export default function Home() {
           />
         </div>
         <a
-          href="mailto:marvin@marvinliyanage.com"
+          href="mailto:marvin.liyanage@gmail.com"
           style={{
             fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 600,
             letterSpacing: "0.06em", textTransform: "uppercase",
