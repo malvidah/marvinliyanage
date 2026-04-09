@@ -1,6 +1,7 @@
 "use client"
 
 import { useSession, signIn, signOut } from "next-auth/react"
+import { usePathname } from "next/navigation"
 
 export function useAdmin() {
   const { data: session, status } = useSession()
@@ -12,8 +13,10 @@ export function useAdmin() {
 
 export default function EditBar() {
   const { session, status, isAdmin } = useAdmin()
+  const pathname = usePathname()
 
   if (status === "loading") return null
+  if (pathname !== "/edit") return null
 
   // Small subtle button in bottom-right corner
   return (
